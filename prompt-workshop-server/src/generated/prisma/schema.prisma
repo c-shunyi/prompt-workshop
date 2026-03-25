@@ -1,0 +1,38 @@
+// Prisma 数据模型定义
+// 包含示例模型和管理员用户模型
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+/// 示例模型 - 用于演示完整 CRUD 链路
+model Example {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  status      Int      @default(1) /// 状态：1-启用 0-禁用
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("examples")
+}
+
+/// 管理员用户模型
+model AdminUser {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(50)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  nickname     String?   @db.VarChar(50)
+  role         String    @default("admin") @db.VarChar(20) /// 角色：admin | super_admin
+  status       Int       @default(1) /// 状态：1-启用 0-禁用
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("admin_users")
+}
