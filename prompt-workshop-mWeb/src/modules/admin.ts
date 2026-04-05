@@ -87,6 +87,13 @@ type ApiResponse<T> = {
   data: T | null
 }
 
+type PaginatedPayload<T> = {
+  list: T[]
+  total: number
+  page: number
+  pageSize: number
+}
+
 type AdminLoginPayload = {
   token: string
   adminInfo: AdminInfo
@@ -94,9 +101,80 @@ type AdminLoginPayload = {
 
 type FeedbackType = 'info' | 'success' | 'error'
 
+type PaginationState = {
+  page: number
+  pageSize: number
+  total: number
+}
+
+type AdminOverviewPayload = {
+  adminTotal: number
+  userTotal: number
+  categoryTotal: number
+  tagTotal: number
+  articleTotal: number
+  publishedArticleTotal: number
+}
+
+type AdminEditorOptionsPayload = {
+  users: UserInfo[]
+  categories: CategoryItem[]
+  tags: TagItem[]
+}
+
+type AdminArticleStats = {
+  total: number
+  draft: number
+  published: number
+  archived: number
+}
+
+type AdminArticleListPayload = PaginatedPayload<AdminArticleItem> & {
+  stats: AdminArticleStats
+}
+
+export type AdminRouteName =
+  | 'admin-overview'
+  | 'admin-admins'
+  | 'admin-users'
+  | 'admin-categories'
+  | 'admin-tags'
+  | 'admin-articles'
+  | 'admin-article-create'
+  | 'admin-article-edit'
+
 export const API_BASE = 'http://localhost:3000/api'
 const ADMIN_TOKEN_KEY = 'prompt_workshop_admin_token'
 const ADMIN_INFO_KEY = 'prompt_workshop_admin_info'
+const DEFAULT_PAGE_SIZE = 10
+
+function createPaginationState(): PaginationState {
+  return {
+    page: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+    total: 0,
+  }
+}
+
+function createOverviewState(): AdminOverviewPayload {
+  return {
+    adminTotal: 0,
+    userTotal: 0,
+    categoryTotal: 0,
+    tagTotal: 0,
+    articleTotal: 0,
+    publishedArticleTotal: 0,
+  }
+}
+
+function createArticleStats(): AdminArticleStats {
+  return {
+    total: 0,
+    draft: 0,
+    published: 0,
+    archived: 0,
+  }
+}
 
 function parseStoredAdmin() {
   const raw = localStorage.getItem(ADMIN_INFO_KEY)
@@ -121,9 +199,28 @@ export const adminState = reactive({
   categories: [] as CategoryItem[],
   tags: [] as TagItem[],
   articles: [] as AdminArticleItem[],
+  userOptions: [] as UserInfo[],
+  categoryOptions: [] as CategoryItem[],
+  tagOptions: [] as TagItem[],
+  overview: createOverviewState(),
+  articleStats: createArticleStats(),
+  adminPagination: createPaginationState(),
+  userPagination: createPaginationState(),
+  categoryPagination: createPaginationState(),
+  tagPagination: createPaginationState(),
+  articlePagination: createPaginationState(),
+  articleFilters: {
+    keyword: '',
+    status: -1 as -1 | 0 | 1 | 2,
+  },
   loading: false,
   dashboardLoading: false,
   dashboardLoaded: false,
+  adminsLoading: false,
+  usersLoading: false,
+  categoriesLoading: false,
+  tagsLoading: false,
+  articlesLoading: false,
   feedbackType: 'info' as FeedbackType,
   feedbackMessage: '',
 })
@@ -161,6 +258,32 @@ async function request<T>(path: string, init?: RequestInit, authToken?: string) 
   return payload.data
 }
 
+function buildPath(path: string, query: Record<string, string | number | undefined | null>) {
+  const searchParams = new URLSearchParams()
+
+  Object.entries(query).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') {
+      return
+    }
+
+    searchParams.set(key, String(value))
+  })
+
+  const queryString = searchParams.toString()
+  return queryString ? `${path}?${queryString}` : path
+}
+
+function applyPaginationState(state: PaginationState, payload: PaginatedPayload<unknown>) {
+  state.page = payload.page
+  state.pageSize = payload.pageSize
+  state.total = payload.total
+}
+
+function normalizeKeyword(value?: string) {
+  const keyword = value?.trim()
+  return keyword ? keyword : undefined
+}
+
 export function setFeedback(message: string, type: FeedbackType = 'info') {
   adminState.feedbackType = type
 
@@ -189,6 +312,12 @@ function persistAdminInfo(adminInfo: AdminInfo) {
   localStorage.setItem(ADMIN_INFO_KEY, JSON.stringify(adminInfo))
 }
 
+function resetPaginationState(state: PaginationState) {
+  state.page = 1
+  state.pageSize = DEFAULT_PAGE_SIZE
+  state.total = 0
+}
+
 function clearSession() {
   adminState.token = ''
   adminState.currentAdmin = null
@@ -197,7 +326,28 @@ function clearSession() {
   adminState.categories = []
   adminState.tags = []
   adminState.articles = []
+  adminState.userOptions = []
+  adminState.categoryOptions = []
+  adminState.tagOptions = []
+  adminState.overview = createOverviewState()
+  adminState.articleStats = createArticleStats()
   adminState.dashboardLoaded = false
+  adminState.loading = false
+  adminState.dashboardLoading = false
+  adminState.adminsLoading = false
+  adminState.usersLoading = false
+  adminState.categoriesLoading = false
+  adminState.tagsLoading = false
+  adminState.articlesLoading = false
+  adminState.feedbackType = 'info'
+  adminState.feedbackMessage = ''
+  adminState.articleFilters.keyword = ''
+  adminState.articleFilters.status = -1
+  resetPaginationState(adminState.adminPagination)
+  resetPaginationState(adminState.userPagination)
+  resetPaginationState(adminState.categoryPagination)
+  resetPaginationState(adminState.tagPagination)
+  resetPaginationState(adminState.articlePagination)
   hydratedToken = ''
   localStorage.removeItem(ADMIN_TOKEN_KEY)
   localStorage.removeItem(ADMIN_INFO_KEY)
@@ -231,30 +381,17 @@ export async function loadDashboard(options?: { silent?: boolean }) {
   adminState.dashboardLoading = true
 
   try {
-    const shouldLoadAdmins = adminState.currentAdmin?.role === 'super_admin'
-
-    const [admins, users, categories, tags, articles] = await Promise.all([
-      shouldLoadAdmins
-        ? request<AdminInfo[]>('/admin/admins', { method: 'GET' }, adminState.token)
-        : Promise.resolve([] as AdminInfo[]),
-      request<UserInfo[]>('/admin/users', { method: 'GET' }, adminState.token),
-      request<CategoryItem[]>('/admin/categories', { method: 'GET' }, adminState.token),
-      request<TagItem[]>('/admin/tags', { method: 'GET' }, adminState.token),
-      request<AdminArticleItem[]>('/admin/articles', { method: 'GET' }, adminState.token),
+    const [overview, editorOptions] = await Promise.all([
+      request<AdminOverviewPayload>('/admin/overview', { method: 'GET' }, adminState.token),
+      request<AdminEditorOptionsPayload>('/admin/editor-options', { method: 'GET' }, adminState.token),
     ])
 
-    adminState.adminList = admins
-    adminState.userList = users
-    adminState.categories = categories
-    adminState.tags = tags
-    adminState.articles = articles
+    adminState.overview = overview
+    adminState.userOptions = editorOptions.users
+    adminState.categoryOptions = editorOptions.categories
+    adminState.tagOptions = editorOptions.tags
     adminState.dashboardLoaded = true
     hydratedToken = adminState.token
-
-    const matchedAdmin = admins.find((item) => item.username === adminState.currentAdmin?.username)
-    if (matchedAdmin) {
-      persistAdminInfo(matchedAdmin)
-    }
 
     if (!options?.silent) {
       setFeedback('管理台数据已刷新。', 'success')
@@ -298,6 +435,226 @@ export async function hydrateAdminSession() {
     return await hydrationPromise
   } finally {
     hydrationPromise = null
+  }
+}
+
+export async function loadAdminAccounts(options?: {
+  page?: number
+  pageSize?: number
+  silent?: boolean
+}) {
+  if (!adminState.token) {
+    return false
+  }
+
+  if (adminState.currentAdmin?.role !== 'super_admin') {
+    adminState.adminList = []
+    resetPaginationState(adminState.adminPagination)
+    return true
+  }
+
+  adminState.adminsLoading = true
+
+  try {
+    const payload = await request<PaginatedPayload<AdminInfo>>(
+      buildPath('/admin/admins', {
+        page: options?.page ?? adminState.adminPagination.page,
+        pageSize: options?.pageSize ?? adminState.adminPagination.pageSize,
+      }),
+      { method: 'GET' },
+      adminState.token,
+    )
+
+    adminState.adminList = payload.list
+    applyPaginationState(adminState.adminPagination, payload)
+
+    const matchedAdmin = payload.list.find((item) => item.username === adminState.currentAdmin?.username)
+    if (matchedAdmin) {
+      persistAdminInfo(matchedAdmin)
+    }
+
+    return true
+  } catch (error) {
+    if (!options?.silent) {
+      setFeedback(error instanceof Error ? error.message : '加载管理员列表失败', 'error')
+    }
+
+    return false
+  } finally {
+    adminState.adminsLoading = false
+  }
+}
+
+export async function loadUsers(options?: {
+  page?: number
+  pageSize?: number
+  silent?: boolean
+}) {
+  if (!adminState.token) {
+    return false
+  }
+
+  adminState.usersLoading = true
+
+  try {
+    const payload = await request<PaginatedPayload<UserInfo>>(
+      buildPath('/admin/users', {
+        page: options?.page ?? adminState.userPagination.page,
+        pageSize: options?.pageSize ?? adminState.userPagination.pageSize,
+      }),
+      { method: 'GET' },
+      adminState.token,
+    )
+
+    adminState.userList = payload.list
+    applyPaginationState(adminState.userPagination, payload)
+    return true
+  } catch (error) {
+    if (!options?.silent) {
+      setFeedback(error instanceof Error ? error.message : '加载用户列表失败', 'error')
+    }
+
+    return false
+  } finally {
+    adminState.usersLoading = false
+  }
+}
+
+export async function loadCategories(options?: {
+  page?: number
+  pageSize?: number
+  silent?: boolean
+}) {
+  if (!adminState.token) {
+    return false
+  }
+
+  adminState.categoriesLoading = true
+
+  try {
+    const payload = await request<PaginatedPayload<CategoryItem>>(
+      buildPath('/admin/categories', {
+        page: options?.page ?? adminState.categoryPagination.page,
+        pageSize: options?.pageSize ?? adminState.categoryPagination.pageSize,
+      }),
+      { method: 'GET' },
+      adminState.token,
+    )
+
+    adminState.categories = payload.list
+    applyPaginationState(adminState.categoryPagination, payload)
+    return true
+  } catch (error) {
+    if (!options?.silent) {
+      setFeedback(error instanceof Error ? error.message : '加载分类列表失败', 'error')
+    }
+
+    return false
+  } finally {
+    adminState.categoriesLoading = false
+  }
+}
+
+export async function loadTags(options?: {
+  page?: number
+  pageSize?: number
+  silent?: boolean
+}) {
+  if (!adminState.token) {
+    return false
+  }
+
+  adminState.tagsLoading = true
+
+  try {
+    const payload = await request<PaginatedPayload<TagItem>>(
+      buildPath('/admin/tags', {
+        page: options?.page ?? adminState.tagPagination.page,
+        pageSize: options?.pageSize ?? adminState.tagPagination.pageSize,
+      }),
+      { method: 'GET' },
+      adminState.token,
+    )
+
+    adminState.tags = payload.list
+    applyPaginationState(adminState.tagPagination, payload)
+    return true
+  } catch (error) {
+    if (!options?.silent) {
+      setFeedback(error instanceof Error ? error.message : '加载标签列表失败', 'error')
+    }
+
+    return false
+  } finally {
+    adminState.tagsLoading = false
+  }
+}
+
+export async function loadArticles(options?: {
+  page?: number
+  pageSize?: number
+  keyword?: string
+  status?: -1 | 0 | 1 | 2
+  silent?: boolean
+}) {
+  if (!adminState.token) {
+    return false
+  }
+
+  adminState.articlesLoading = true
+
+  const keyword = normalizeKeyword(options?.keyword ?? adminState.articleFilters.keyword)
+  const status = options?.status ?? adminState.articleFilters.status
+
+  try {
+    const payload = await request<AdminArticleListPayload>(
+      buildPath('/admin/articles', {
+        page: options?.page ?? adminState.articlePagination.page,
+        pageSize: options?.pageSize ?? adminState.articlePagination.pageSize,
+        keyword,
+        status: status === -1 ? undefined : status,
+      }),
+      { method: 'GET' },
+      adminState.token,
+    )
+
+    adminState.articles = payload.list
+    adminState.articleStats = payload.stats
+    adminState.articleFilters.keyword = keyword || ''
+    adminState.articleFilters.status = status
+    applyPaginationState(adminState.articlePagination, payload)
+    return true
+  } catch (error) {
+    if (!options?.silent) {
+      setFeedback(error instanceof Error ? error.message : '加载文章列表失败', 'error')
+    }
+
+    return false
+  } finally {
+    adminState.articlesLoading = false
+  }
+}
+
+export async function refreshAdminWorkspace(routeName?: string) {
+  const success = await loadDashboard()
+
+  if (!success) {
+    return false
+  }
+
+  switch (routeName) {
+    case 'admin-admins':
+      return loadAdminAccounts()
+    case 'admin-users':
+      return loadUsers()
+    case 'admin-categories':
+      return loadCategories()
+    case 'admin-tags':
+      return loadTags()
+    case 'admin-articles':
+      return loadArticles()
+    default:
+      return true
   }
 }
 

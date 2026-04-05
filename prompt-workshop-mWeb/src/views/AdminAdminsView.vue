@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import { adminState, createAdminAccount, loadDashboard, type AdminInfo } from '../modules/admin'
+import { adminState, createAdminAccount, loadAdminAccounts, loadDashboard, type AdminInfo } from '../modules/admin'
 
 const createDialogVisible = ref(false)
 
@@ -39,6 +39,7 @@ async function submitCreateAdmin() {
   createAdminForm.role = 'admin'
   createDialogVisible.value = false
   await loadDashboard({ silent: true })
+  await loadAdminAccounts({ page: 1, silent: true })
 }
 
 function openCreateDialog() {
@@ -52,6 +53,18 @@ function closeCreateDialog() {
 function adminStatusType(row: AdminInfo) {
   return row.status === 1 ? 'success' : 'danger'
 }
+
+function handlePageChange(page: number) {
+  void loadAdminAccounts({ page })
+}
+
+function handlePageSizeChange(pageSize: number) {
+  void loadAdminAccounts({ page: 1, pageSize })
+}
+
+onMounted(() => {
+  void loadAdminAccounts({ silent: true })
+})
 </script>
 
 <template>
@@ -68,7 +81,12 @@ function adminStatusType(row: AdminInfo) {
         </el-button>
       </div>
 
-      <el-table :data="adminState.adminList" stripe empty-text="当前账号无权限查看管理员列表">
+      <el-table
+        v-loading="adminState.adminsLoading"
+        :data="adminState.adminList"
+        stripe
+        empty-text="当前账号无权限查看管理员列表"
+      >
         <el-table-column prop="username" label="用户名" min-width="140" />
         <el-table-column prop="nickname" label="昵称" min-width="140">
           <template #default="{ row }">
@@ -89,6 +107,19 @@ function adminStatusType(row: AdminInfo) {
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="admin-table-pagination">
+        <el-pagination
+          background
+          layout="total, sizes, prev, pager, next"
+          :current-page="adminState.adminPagination.page"
+          :page-size="adminState.adminPagination.pageSize"
+          :page-sizes="[10, 20, 50]"
+          :total="adminState.adminPagination.total"
+          @current-change="handlePageChange"
+          @size-change="handlePageSizeChange"
+        />
+      </div>
     </article>
 
     <el-dialog v-model="createDialogVisible" title="创建管理员" width="560px" @close="closeCreateDialog">

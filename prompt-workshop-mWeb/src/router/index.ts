@@ -3,6 +3,7 @@ import { adminState, hydrateAdminSession } from '../modules/admin'
 import AdminWorkspaceLayout from '../layouts/AdminWorkspaceLayout.vue'
 import AdminLoginView from '../views/AdminLoginView.vue'
 import AdminAdminsView from '../views/AdminAdminsView.vue'
+import AdminArticleEditorView from '../views/AdminArticleEditorView.vue'
 import AdminArticlesView from '../views/AdminArticlesView.vue'
 import AdminCategoriesView from '../views/AdminCategoriesView.vue'
 import AdminOverviewView from '../views/AdminOverviewView.vue'
@@ -85,7 +86,27 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             title: '文章管理',
-            description: '发布、编辑、下架、删除文章，并维护文章内容状态。',
+            description: '查看文章列表并管理文章状态。',
+          },
+        },
+        {
+          path: 'articles/new',
+          name: 'admin-article-create',
+          component: AdminArticleEditorView,
+          meta: {
+            requiresAuth: true,
+            title: '创建文章',
+            description: '在独立页面中编写文章内容并设置发布状态。',
+          },
+        },
+        {
+          path: 'articles/:id/edit',
+          name: 'admin-article-edit',
+          component: AdminArticleEditorView,
+          meta: {
+            requiresAuth: true,
+            title: '编辑文章',
+            description: '在独立页面中修改文章内容、作者和发布状态。',
           },
         },
       ],

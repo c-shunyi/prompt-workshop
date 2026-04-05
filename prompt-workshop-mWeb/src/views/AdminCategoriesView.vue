@@ -1,9 +1,17 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { pinyin } from 'pinyin-pro'
-import { adminState, createCategory, deleteCategoryItem, loadDashboard, updateCategoryItem, type CategoryItem } from '../modules/admin'
+import {
+  adminState,
+  createCategory,
+  deleteCategoryItem,
+  loadCategories,
+  loadDashboard,
+  updateCategoryItem,
+  type CategoryItem,
+} from '../modules/admin'
 
 const createCategoryForm = reactive({
   name: '',
@@ -99,6 +107,7 @@ async function submitCreateCategory() {
   createSlugManuallyEdited.value = false
   createDialogVisible.value = false
   await loadDashboard({ silent: true })
+  await loadCategories({ page: 1, silent: true })
 }
 
 function openCreateDialog() {
@@ -161,6 +170,7 @@ async function saveCategory(categoryId: number) {
 
   cancelEditCategory()
   await loadDashboard({ silent: true })
+  await loadCategories({ silent: true })
 }
 
 async function removeCategory(categoryId: number) {
@@ -175,7 +185,24 @@ async function removeCategory(categoryId: number) {
   }
 
   await loadDashboard({ silent: true })
+  const targetPage =
+    adminState.categories.length === 1 && adminState.categoryPagination.page > 1
+      ? adminState.categoryPagination.page - 1
+      : adminState.categoryPagination.page
+  await loadCategories({ page: targetPage, silent: true })
 }
+
+function handlePageChange(page: number) {
+  void loadCategories({ page })
+}
+
+function handlePageSizeChange(pageSize: number) {
+  void loadCategories({ page: 1, pageSize })
+}
+
+onMounted(() => {
+  void loadCategories({ silent: true })
+})
 </script>
 
 <template>
@@ -192,7 +219,12 @@ async function removeCategory(categoryId: number) {
         </el-button>
       </div>
 
-      <el-table :data="adminState.categories" stripe empty-text="当前还没有分类">
+      <el-table
+        v-loading="adminState.categoriesLoading"
+        :data="adminState.categories"
+        stripe
+        empty-text="当前还没有分类"
+      >
         <el-table-column prop="name" label="名称" min-width="180" />
         <el-table-column prop="slug" label="Slug" min-width="180" />
         <el-table-column prop="sort" label="排序" min-width="120" />
@@ -226,6 +258,19 @@ async function removeCategory(categoryId: number) {
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="admin-table-pagination">
+        <el-pagination
+          background
+          layout="total, sizes, prev, pager, next"
+          :current-page="adminState.categoryPagination.page"
+          :page-size="adminState.categoryPagination.pageSize"
+          :page-sizes="[10, 20, 50]"
+          :total="adminState.categoryPagination.total"
+          @current-change="handlePageChange"
+          @size-change="handlePageSizeChange"
+        />
+      </div>
     </article>
 
     <el-dialog v-model="createDialogVisible" title="创建分类" width="620px" @close="closeCreateDialog">

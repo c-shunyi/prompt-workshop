@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { adminState, loadDashboard, updateUserAccountStatus } from '../modules/admin'
+import { onMounted } from 'vue'
+import { adminState, loadDashboard, loadUsers, updateUserAccountStatus } from '../modules/admin'
 
 function formatDate(value?: string | null) {
   if (!value) {
@@ -14,8 +15,21 @@ async function updateUserStatus(userId: number, status: 0 | 1) {
 
   if (success) {
     await loadDashboard({ silent: true })
+    await loadUsers({ silent: true })
   }
 }
+
+function handlePageChange(page: number) {
+  void loadUsers({ page })
+}
+
+function handlePageSizeChange(pageSize: number) {
+  void loadUsers({ page: 1, pageSize })
+}
+
+onMounted(() => {
+  void loadUsers({ silent: true })
+})
 </script>
 
 <template>
@@ -28,7 +42,12 @@ async function updateUserStatus(userId: number, status: 0 | 1) {
         </div>
       </div>
 
-      <el-table :data="adminState.userList" stripe empty-text="暂无前台用户">
+      <el-table
+        v-loading="adminState.usersLoading"
+        :data="adminState.userList"
+        stripe
+        empty-text="暂无前台用户"
+      >
         <el-table-column prop="username" label="用户名" min-width="140" />
         <el-table-column prop="email" label="邮箱" min-width="220" />
         <el-table-column prop="nickname" label="昵称" min-width="140">
@@ -73,6 +92,19 @@ async function updateUserStatus(userId: number, status: 0 | 1) {
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="admin-table-pagination">
+        <el-pagination
+          background
+          layout="total, sizes, prev, pager, next"
+          :current-page="adminState.userPagination.page"
+          :page-size="adminState.userPagination.pageSize"
+          :page-sizes="[10, 20, 50]"
+          :total="adminState.userPagination.total"
+          @current-change="handlePageChange"
+          @size-change="handlePageSizeChange"
+        />
+      </div>
     </article>
   </section>
 </template>

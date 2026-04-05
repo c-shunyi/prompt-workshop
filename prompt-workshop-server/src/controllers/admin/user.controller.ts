@@ -8,10 +8,12 @@ import { success, fail } from '../../utils/response';
  */
 
 /** 获取前台用户列表 */
-export async function getUserList(_req: Request, res: Response, next: NextFunction) {
+export async function getUserList(req: Request, res: Response, next: NextFunction) {
   try {
-    const list = await userService.getUserList();
-    success(res, list);
+    const page = Number(req.query.page);
+    const pageSize = Number(req.query.pageSize);
+    const result = await userService.getUserList({ page, pageSize });
+    success(res, result);
   } catch (err) {
     next(err);
   }

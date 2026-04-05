@@ -2,33 +2,29 @@
 import { computed } from 'vue'
 import { adminState, roleLabel } from '../modules/admin'
 
-const publishedArticleCount = computed(
-  () => adminState.articles.filter((item) => item.status === 1).length,
-)
-
 const metrics = computed(() => [
   {
     eyebrow: '管理员数量',
-    value: String(adminState.adminList.length),
+    value: String(adminState.overview.adminTotal),
     label: '已接入后台账号',
     trend: roleLabel.value,
   },
   {
     eyebrow: '前台用户数量',
-    value: String(adminState.userList.length),
+    value: String(adminState.overview.userTotal),
     label: '当前注册用户',
     trend: '用户管理',
   },
   {
     eyebrow: '内容分类数量',
-    value: String(adminState.categories.length),
-    label: `标签 ${adminState.tags.length} 个`,
+    value: String(adminState.overview.categoryTotal),
+    label: `标签 ${adminState.overview.tagTotal} 个`,
     trend: '内容目录',
   },
   {
     eyebrow: '已发布文章',
-    value: String(publishedArticleCount.value),
-    label: `总文章 ${adminState.articles.length} 篇`,
+    value: String(adminState.overview.publishedArticleTotal),
+    label: `总文章 ${adminState.overview.articleTotal} 篇`,
     trend: adminState.dashboardLoading ? '同步中' : '审核中',
   },
 ])

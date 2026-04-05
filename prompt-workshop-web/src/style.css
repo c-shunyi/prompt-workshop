@@ -912,8 +912,9 @@ a {
 }
 
 .markdown-body pre {
+  position: relative;
   overflow-x: auto;
-  padding: 16px;
+  padding: 56px 16px 16px;
   border-radius: 18px;
   background: #102033;
   color: #eff6ff;
@@ -928,9 +929,65 @@ a {
 }
 
 .markdown-body pre code {
+  display: block;
   padding: 0;
   background: transparent;
   color: inherit;
+}
+
+.markdown-code-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.markdown-code-language {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.18);
+  color: rgba(226, 232, 240, 0.92);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.markdown-copy-button {
+  pointer-events: auto;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  min-height: 28px;
+  padding: 0 12px;
+  background: rgba(15, 23, 42, 0.7);
+  color: #f8fafc;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.markdown-copy-button:hover {
+  transform: translateY(-1px);
+  background: rgba(30, 41, 59, 0.92);
+  border-color: rgba(226, 232, 240, 0.28);
+}
+
+.markdown-copy-button[data-state='copied'] {
+  background: rgba(20, 83, 45, 0.82);
+  border-color: rgba(74, 222, 128, 0.34);
+}
+
+.markdown-copy-button[data-state='error'] {
+  background: rgba(127, 29, 29, 0.82);
+  border-color: rgba(252, 165, 165, 0.3);
 }
 
 .markdown-body img {
@@ -1004,6 +1061,18 @@ a {
 
   .site-search {
     grid-template-columns: 1fr;
+  }
+
+  .markdown-code-toolbar {
+    left: 12px;
+    right: 12px;
+  }
+
+  .markdown-copy-button,
+  .markdown-code-language {
+    min-height: 26px;
+    padding-inline: 10px;
+    font-size: 11px;
   }
 }
 

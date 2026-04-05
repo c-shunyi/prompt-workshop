@@ -4,6 +4,7 @@ import {
   queryRows,
   withTransaction,
 } from '../db/client';
+import { type PaginationParams, type PaginatedResult, normalizePagination } from '../utils/pagination';
 
 export interface CategoryItem {
   id: number;
@@ -47,6 +48,13 @@ export interface ArticleListItem {
   tags: ArticleTagItem[];
   liked?: boolean;
   favorited?: boolean;
+}
+
+export interface AdminArticleStats {
+  total: number;
+  draft: number;
+  published: number;
+  archived: number;
 }
 
 interface ArticleRow {
@@ -327,7 +335,41 @@ export async function listPublicCategories() {
   );
 }
 
-export async function listAdminCategories() {
+export async function listAdminCategories(
+  params: PaginationParams = {},
+): Promise<PaginatedResult<CategoryItem>> {
+  const { page, pageSize, offset } = normalizePagination(params);
+
+  const [list, totalRow] = await Promise.all([
+    queryRows<CategoryItem>(
+      `SELECT
+        id,
+        name,
+        slug,
+        sort,
+        status,
+        created_at AS createdAt,
+        updated_at AS updatedAt
+      FROM categories
+      ORDER BY sort DESC, created_at DESC
+      LIMIT ? OFFSET ?`,
+      [pageSize, offset],
+    ),
+    queryOne<{ total: number }>(
+      `SELECT CAST(COUNT(*) AS SIGNED) AS total
+      FROM categories`,
+    ),
+  ]);
+
+  return {
+    list,
+    total: totalRow?.total ?? 0,
+    page,
+    pageSize,
+  };
+}
+
+export async function listAdminCategoryOptions() {
   return queryRows<CategoryItem>(
     `SELECT
       id,
@@ -340,6 +382,15 @@ export async function listAdminCategories() {
     FROM categories
     ORDER BY sort DESC, created_at DESC`,
   );
+}
+
+export async function getCategoryCount() {
+  const result = await queryOne<{ total: number }>(
+    `SELECT CAST(COUNT(*) AS SIGNED) AS total
+    FROM categories`,
+  );
+
+  return result?.total ?? 0;
 }
 
 export async function createCategory(input: {
@@ -472,6 +523,50 @@ export async function listTags() {
   );
 }
 
+export async function listAdminTags(
+  params: PaginationParams = {},
+): Promise<PaginatedResult<TagItem>> {
+  const { page, pageSize, offset } = normalizePagination(params);
+
+  const [list, totalRow] = await Promise.all([
+    queryRows<TagItem>(
+      `SELECT
+        id,
+        name,
+        created_at AS createdAt,
+        updated_at AS updatedAt
+      FROM tags
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?`,
+      [pageSize, offset],
+    ),
+    queryOne<{ total: number }>(
+      `SELECT CAST(COUNT(*) AS SIGNED) AS total
+      FROM tags`,
+    ),
+  ]);
+
+  return {
+    list,
+    total: totalRow?.total ?? 0,
+    page,
+    pageSize,
+  };
+}
+
+export async function listAdminTagOptions() {
+  return listTags();
+}
+
+export async function getTagCount() {
+  const result = await queryOne<{ total: number }>(
+    `SELECT CAST(COUNT(*) AS SIGNED) AS total
+    FROM tags`,
+  );
+
+  return result?.total ?? 0;
+}
+
 export async function createTag(input: { name: string }) {
   const result = await execute(
     'INSERT INTO tags (name, created_at, updated_at) VALUES (?, NOW(), NOW())',
@@ -595,20 +690,64 @@ export async function listUserArticles(userId: number) {
   return enrichArticles(rows, userId);
 }
 
-export async function listAdminArticles(params: { keyword?: string; status?: number }) {
+export async function getAdminArticleStats(
+  executor?: Parameters<typeof queryOne>[2],
+): Promise<AdminArticleStats> {
+  const result = await queryOne<AdminArticleStats>(
+    `SELECT
+      CAST(COUNT(*) AS SIGNED) AS total,
+      CAST(SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS SIGNED) AS draft,
+      CAST(SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS SIGNED) AS published,
+      CAST(SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) AS SIGNED) AS archived
+    FROM articles`,
+    [],
+    executor,
+  );
+
+  return {
+    total: result?.total ?? 0,
+    draft: result?.draft ?? 0,
+    published: result?.published ?? 0,
+    archived: result?.archived ?? 0,
+  };
+}
+
+export async function listAdminArticles(params: {
+  page?: number;
+  pageSize?: number;
+  keyword?: string;
+  status?: number;
+}) {
+  const { page, pageSize, offset } = normalizePagination(params);
   const { whereSql, params: whereParams } = buildArticleWhereClause({
     status: params.status,
     keyword: params.keyword,
   });
 
-  const rows = await queryRows<ArticleRow>(
-    `${articleBaseSelect(false)}
-    ${whereSql}
-    ORDER BY a.updated_at DESC`,
-    whereParams,
-  );
+  const [rows, totalRow, stats] = await Promise.all([
+    queryRows<ArticleRow>(
+      `${articleBaseSelect(false)}
+      ${whereSql}
+      ORDER BY a.updated_at DESC
+      LIMIT ? OFFSET ?`,
+      [...whereParams, pageSize, offset],
+    ),
+    queryOne<{ total: number }>(
+      `SELECT CAST(COUNT(*) AS SIGNED) AS total
+      FROM articles a
+      ${whereSql}`,
+      whereParams,
+    ),
+    getAdminArticleStats(),
+  ]);
 
-  return enrichArticles(rows);
+  return {
+    list: await enrichArticles(rows),
+    total: totalRow?.total ?? 0,
+    page,
+    pageSize,
+    stats,
+  };
 }
 
 export async function getPublishedArticleDetail(id: number, userId?: number) {
@@ -926,8 +1065,7 @@ export async function updateAdminArticleStatus(articleId: number, status: number
     [normalizedStatus, normalizedStatus === 1 ? existing.publishedAt ?? new Date() : null, articleId],
   );
 
-  const rows = await listAdminArticles({});
-  return rows.find((item) => item.id === articleId) ?? null;
+  return getAdminEditableArticle(articleId);
 }
 
 export async function deleteAdminArticle(articleId: number) {

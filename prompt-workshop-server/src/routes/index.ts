@@ -3,6 +3,7 @@ import apiContentRoute from './api/content.route';
 import apiExampleRoute from './api/example.route';
 import apiUserRoute from './api/user.route';
 import adminContentRoute from './admin/content.route';
+import adminDashboardRoute from './admin/dashboard.route';
 import adminExampleRoute from './admin/example.route';
 import adminUserRoute from './admin/admin-user.route';
 import adminWebUserRoute from './admin/user.route';
@@ -34,6 +35,9 @@ router.use('/', apiContentRoute);
 
 /** 管理员用户相关（登录、管理员管理） - /api/admin */
 router.use('/admin', adminUserRoute);
+
+/** 管理台概览与编辑器初始化数据 */
+router.use('/admin', adminDashboardRoute);
 
 /** 管理台示例 CRUD - /api/admin/examples */
 router.use('/admin/examples', adminExampleRoute);

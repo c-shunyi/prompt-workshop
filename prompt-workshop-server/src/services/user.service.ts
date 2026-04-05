@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { execute, queryOne, queryRows } from '../db/client';
 import { signToken } from '../utils/jwt';
+import { type PaginationParams, type PaginatedResult, normalizePagination } from '../utils/pagination';
 
 interface UserRecord {
   id: number;
@@ -182,7 +183,52 @@ export async function getCurrentUserProfile(userId: number) {
  * 获取前台用户列表
  * @returns 前台用户列表
  */
-export async function getUserList() {
+export async function getUserList(
+  params: PaginationParams = {},
+): Promise<PaginatedResult<Omit<UserRecord, 'passwordHash' | 'updatedAt'>>> {
+  const { page, pageSize, offset } = normalizePagination(params);
+
+  const [list, totalRow] = await Promise.all([
+    queryRows<Omit<UserRecord, 'passwordHash' | 'updatedAt'>>(
+      `SELECT
+        id,
+        username,
+        email,
+        nickname,
+        avatar,
+        bio,
+        status,
+        last_login_at AS lastLoginAt,
+        created_at AS createdAt
+      FROM users
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?`,
+      [pageSize, offset],
+    ),
+    queryOne<{ total: number }>(
+      `SELECT CAST(COUNT(*) AS SIGNED) AS total
+      FROM users`,
+    ),
+  ]);
+
+  return {
+    list,
+    total: totalRow?.total ?? 0,
+    page,
+    pageSize,
+  };
+}
+
+export async function getUserCount() {
+  const result = await queryOne<{ total: number }>(
+    `SELECT CAST(COUNT(*) AS SIGNED) AS total
+    FROM users`,
+  );
+
+  return result?.total ?? 0;
+}
+
+export async function listEnabledUsers() {
   return queryRows<Omit<UserRecord, 'passwordHash' | 'updatedAt'>>(
     `SELECT
       id,
@@ -195,6 +241,7 @@ export async function getUserList() {
       last_login_at AS lastLoginAt,
       created_at AS createdAt
     FROM users
+    WHERE status = 1
     ORDER BY created_at DESC`,
   );
 }

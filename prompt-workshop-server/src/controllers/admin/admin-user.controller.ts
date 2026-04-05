@@ -31,10 +31,12 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 }
 
 /** 获取管理员列表（需超级管理员权限） */
-export async function getAdminList(_req: AdminAuthRequest, res: Response, next: NextFunction) {
+export async function getAdminList(req: AdminAuthRequest, res: Response, next: NextFunction) {
   try {
-    const list = await adminUserService.getAdminList();
-    success(res, list);
+    const page = Number(req.query.page);
+    const pageSize = Number(req.query.pageSize);
+    const result = await adminUserService.getAdminList({ page, pageSize });
+    success(res, result);
   } catch (err) {
     next(err);
   }

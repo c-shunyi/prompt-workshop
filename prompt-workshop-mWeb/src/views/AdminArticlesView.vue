@@ -1,105 +1,29 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import MarkdownIt from 'markdown-it'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 import { EditPen, MoreFilled, Plus, Search } from '@element-plus/icons-vue'
-import RichTextEditor from '../components/RichTextEditor.vue'
 import {
   adminState,
   deleteArticleByAdmin,
-  loadAdminArticleDetail,
+  loadArticles,
   loadDashboard,
-  saveArticleByAdmin,
   updateArticleStatusByAdmin,
   type AdminArticleItem,
 } from '../modules/admin'
 
-const markdown = new MarkdownIt({
-  html: false,
-  linkify: true,
-  breaks: true,
-  typographer: true,
-})
+const router = useRouter()
 
-const dialogVisible = ref(false)
-const isEditMode = ref(false)
-const editingArticleId = ref<number | null>(null)
+const filters = adminState.articleFilters
 
-const filters = reactive({
-  keyword: '',
-  status: -1,
-})
+const articleStats = computed(() => adminState.articleStats)
 
-const articleForm = reactive({
-  userId: 0,
-  title: '',
-  summary: '',
-  content: '',
-  categoryId: 0,
-  tagIds: [] as number[],
-  status: 0,
-})
-
-const availableUsers = computed(() => adminState.userList.filter((item) => item.status === 1))
-const defaultAuthor = computed(() => availableUsers.value[0] ?? null)
-const defaultAuthorLabel = computed(() => {
-  if (!defaultAuthor.value) {
-    return ''
-  }
-
-  return defaultAuthor.value.nickname || defaultAuthor.value.username
-})
-const authorFieldHint = computed(() => {
-  if (isEditMode.value) {
-    return '作者可选，留空时会保留当前作者。'
-  }
-
-  if (defaultAuthorLabel.value) {
-    return `作者可选，留空时会自动使用 ${defaultAuthorLabel.value}。`
-  }
-
-  return '作者可选，留空时会自动分配默认作者。'
-})
-const articleStats = computed(() => ({
-  total: adminState.articles.length,
-  draft: adminState.articles.filter((item) => item.status === 0).length,
-  published: adminState.articles.filter((item) => item.status === 1).length,
-  archived: adminState.articles.filter((item) => item.status === 2).length,
-}))
-const filteredArticles = computed(() => {
-  const keyword = filters.keyword.trim().toLowerCase()
-
-  return adminState.articles.filter((article) => {
-    const matchesStatus = filters.status === -1 || article.status === filters.status
-
-    if (!matchesStatus) {
-      return false
-    }
-
-    if (!keyword) {
-      return true
-    }
-
-    const searchText = [
-      article.title,
-      article.summary || '',
-      article.authorNickname || '',
-      article.authorUsername,
-      article.categoryName || '',
-      article.tags.map((tag) => tag.name).join(' '),
-    ]
-      .join(' ')
-      .toLowerCase()
-
-    return searchText.includes(keyword)
-  })
-})
 const filterSummary = computed(() => {
   if (!filters.keyword.trim() && filters.status === -1) {
-    return `共 ${articleStats.value.total} 篇文章`
+    return `共 ${adminState.articlePagination.total} 篇文章`
   }
 
-  return `筛选结果 ${filteredArticles.value.length} 篇 / 总计 ${articleStats.value.total} 篇`
+  return `筛选结果 ${adminState.articlePagination.total} 篇`
 })
 
 function formatDate(value?: string | null) {
@@ -138,120 +62,29 @@ function getAuthorLabel(article: AdminArticleItem) {
   return article.authorNickname || article.authorUsername
 }
 
-function isRichTextHtml(content: string) {
-  const trimmed = content.trim()
-  return /^(?:<p\b|<div\b|<h[1-6]\b|<blockquote\b|<ul\b|<ol\b|<table\b|<pre\b)/i.test(trimmed)
-}
-
-function normalizeContentForRichText(content?: string | null) {
-  const raw = (content || '').trim()
-
-  if (!raw) {
-    return ''
-  }
-
-  return isRichTextHtml(raw) ? raw : markdown.render(raw)
-}
-
-function hasMeaningfulRichTextContent(content: string) {
-  const plainText = content
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/\s+/g, '')
-
-  return plainText.length > 0
-}
-
-function resetForm() {
-  articleForm.userId = 0
-  articleForm.title = ''
-  articleForm.summary = ''
-  articleForm.content = ''
-  articleForm.categoryId = 0
-  articleForm.tagIds = []
-  articleForm.status = 0
-}
-
-function openCreateDialog(defaultStatus = 0) {
-  if (!availableUsers.value.length) {
-    ElMessage.warning('当前没有可用的前台用户，请先创建用户账号')
-    return
-  }
-
-  resetForm()
-  articleForm.status = defaultStatus
-  isEditMode.value = false
-  editingArticleId.value = null
-  dialogVisible.value = true
-}
-
-function openPublishDialog() {
-  openCreateDialog(1)
-}
-
 function resetFilters() {
   filters.keyword = ''
   filters.status = -1
+  void loadArticles({ page: 1, keyword: '', status: -1 })
 }
 
-async function openEditDialog(article: AdminArticleItem) {
-  const detail = await loadAdminArticleDetail(article.id)
-
-  if (!detail) {
-    return
-  }
-
-  isEditMode.value = true
-  editingArticleId.value = article.id
-  articleForm.userId = detail.userId
-  articleForm.title = detail.title
-  articleForm.summary = detail.summary || ''
-  articleForm.content = normalizeContentForRichText(detail.content)
-  articleForm.categoryId = detail.categoryId || 0
-  articleForm.tagIds = detail.tags.map((tag) => tag.id)
-  articleForm.status = detail.status
-  dialogVisible.value = true
-}
-
-function closeDialog() {
-  dialogVisible.value = false
-  isEditMode.value = false
-  editingArticleId.value = null
-  resetForm()
-}
-
-async function submitArticleWithStatus(status: number) {
-  if (!articleForm.title || !hasMeaningfulRichTextContent(articleForm.content)) {
-    ElMessage.warning('请填写标题和正文')
-    return
-  }
-
-  if (!editingArticleId.value && !defaultAuthor.value && !articleForm.userId) {
-    ElMessage.warning('当前没有可用的默认作者，请先创建并启用前台用户账号')
-    return
-  }
-
-  articleForm.status = status
-
-  const success = await saveArticleByAdmin({
-    articleId: editingArticleId.value || undefined,
-    userId: articleForm.userId || undefined,
-    title: articleForm.title.trim(),
-    summary: articleForm.summary.trim(),
-    content: articleForm.content,
-    categoryId: articleForm.categoryId || null,
-    tagIds: articleForm.tagIds,
-    status: articleForm.status,
+function applyFilters() {
+  void loadArticles({
+    page: 1,
+    keyword: filters.keyword,
+    status: filters.status,
   })
+}
 
-  if (!success) {
-    return
-  }
+function goCreatePage(defaultStatus = 0) {
+  void router.push({
+    name: 'admin-article-create',
+    query: defaultStatus === 1 ? { status: '1' } : undefined,
+  })
+}
 
-  closeDialog()
-  await loadDashboard({ silent: true })
+function goEditPage(articleId: number) {
+  void router.push(`/dashboard/articles/${articleId}/edit`)
 }
 
 async function updateArticleStatus(article: AdminArticleItem, status: 0 | 1 | 2) {
@@ -263,6 +96,7 @@ async function updateArticleStatus(article: AdminArticleItem, status: 0 | 1 | 2)
 
   if (success) {
     await loadDashboard({ silent: true })
+    await loadArticles({ silent: true })
   }
 }
 
@@ -271,6 +105,11 @@ async function removeArticle(articleId: number) {
 
   if (success) {
     await loadDashboard({ silent: true })
+    const targetPage =
+      adminState.articles.length === 1 && adminState.articlePagination.page > 1
+        ? adminState.articlePagination.page - 1
+        : adminState.articlePagination.page
+    await loadArticles({ page: targetPage, silent: true })
   }
 }
 
@@ -312,6 +151,18 @@ async function handleArticleCommand(article: AdminArticleItem, command: string |
     await updateArticleStatus(article, 2)
   }
 }
+
+function handlePageChange(page: number) {
+  void loadArticles({ page })
+}
+
+function handlePageSizeChange(pageSize: number) {
+  void loadArticles({ page: 1, pageSize })
+}
+
+onMounted(() => {
+  void loadArticles({ silent: true })
+})
 </script>
 
 <template>
@@ -324,8 +175,8 @@ async function handleArticleCommand(article: AdminArticleItem, command: string |
         </div>
 
         <el-space wrap>
-          <el-button plain @click="openCreateDialog(0)">新建草稿</el-button>
-          <el-button type="primary" :icon="Plus" @click="openPublishDialog">创建并发布</el-button>
+          <el-button plain @click="goCreatePage(0)">新建草稿</el-button>
+          <el-button type="primary" :icon="Plus" @click="goCreatePage(1)">创建并发布</el-button>
         </el-space>
       </div>
 
@@ -344,13 +195,16 @@ async function handleArticleCommand(article: AdminArticleItem, command: string |
             clearable
             :prefix-icon="Search"
             placeholder="搜索标题、作者、分类或标签"
+            @clear="applyFilters"
+            @keyup.enter="applyFilters"
           />
-          <el-select v-model="filters.status" class="admin-article-toolbar__status">
+          <el-select v-model="filters.status" class="admin-article-toolbar__status" @change="applyFilters">
             <el-option label="全部状态" :value="-1" />
             <el-option label="草稿" :value="0" />
             <el-option label="已发布" :value="1" />
             <el-option label="下架" :value="2" />
           </el-select>
+          <el-button type="primary" plain :icon="Search" @click="applyFilters">查询</el-button>
           <el-button plain @click="resetFilters">重置</el-button>
         </div>
       </div>
@@ -360,7 +214,13 @@ async function handleArticleCommand(article: AdminArticleItem, command: string |
       </p>
 
       <div class="admin-article-table">
-        <el-table :data="filteredArticles" stripe table-layout="fixed" empty-text="当前还没有文章">
+        <el-table
+          v-loading="adminState.articlesLoading"
+          :data="adminState.articles"
+          stripe
+          table-layout="fixed"
+          empty-text="当前还没有文章"
+        >
           <el-table-column label="文章">
             <template #default="{ row }">
               <div class="admin-article-card">
@@ -400,11 +260,8 @@ async function handleArticleCommand(article: AdminArticleItem, command: string |
           <el-table-column label="操作" width="136" align="center">
             <template #default="{ row }">
               <div class="admin-article-actions">
-                <el-button size="small" plain :icon="EditPen" @click="openEditDialog(row)">编辑</el-button>
-                <el-dropdown
-                  trigger="click"
-                  @command="handleArticleCommand(row, $event)"
-                >
+                <el-button size="small" plain :icon="EditPen" @click="goEditPage(row.id)">编辑</el-button>
+                <el-dropdown trigger="click" @command="handleArticleCommand(row, $event)">
                   <el-button size="small" plain :icon="MoreFilled">
                     更多
                   </el-button>
@@ -433,111 +290,27 @@ async function handleArticleCommand(article: AdminArticleItem, command: string |
           <template #empty>
             <el-empty description="当前没有符合条件的文章">
               <el-space wrap>
-                <el-button plain @click="openCreateDialog(0)">新建草稿</el-button>
-                <el-button type="primary" @click="openPublishDialog">创建并发布</el-button>
+                <el-button plain @click="goCreatePage(0)">新建草稿</el-button>
+                <el-button type="primary" @click="goCreatePage(1)">创建并发布</el-button>
               </el-space>
             </el-empty>
           </template>
         </el-table>
       </div>
+
+      <div class="admin-table-pagination">
+        <el-pagination
+          background
+          layout="total, sizes, prev, pager, next"
+          :current-page="adminState.articlePagination.page"
+          :page-size="adminState.articlePagination.pageSize"
+          :page-sizes="[10, 20, 50]"
+          :total="adminState.articlePagination.total"
+          @current-change="handlePageChange"
+          @size-change="handlePageSizeChange"
+        />
+      </div>
     </article>
-
-    <el-dialog
-      v-model="dialogVisible"
-      :title="isEditMode ? '编辑文章' : '创建文章'"
-      width="980px"
-      @close="closeDialog"
-    >
-      <el-form :model="articleForm" label-position="top">
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="文章作者（可选）">
-              <el-select
-                v-model="articleForm.userId"
-                class="admin-panel__full-width"
-                filterable
-                clearable
-                placeholder="不选择则自动分配作者"
-              >
-                <el-option
-                  v-for="user in availableUsers"
-                  :key="user.id"
-                  :label="`${user.nickname || user.username} (${user.username})`"
-                  :value="user.id"
-                />
-              </el-select>
-              <p class="admin-article-form__hint">{{ authorFieldHint }}</p>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="发布状态">
-              <el-select v-model="articleForm.status" class="admin-panel__full-width">
-                <el-option label="草稿" :value="0" />
-                <el-option label="发布" :value="1" />
-                <el-option label="下架" :value="2" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-form-item label="文章标题">
-          <el-input v-model.trim="articleForm.title" placeholder="输入文章标题" />
-        </el-form-item>
-
-        <el-form-item label="文章摘要">
-          <el-input v-model.trim="articleForm.summary" type="textarea" :rows="3" placeholder="输入文章摘要" />
-        </el-form-item>
-
-        <el-row :gutter="12">
-          <el-col :span="12">
-            <el-form-item label="文章分类">
-              <el-select v-model="articleForm.categoryId" class="admin-panel__full-width" clearable>
-                <el-option label="未分类" :value="0" />
-                <el-option
-                  v-for="category in adminState.categories"
-                  :key="category.id"
-                  :label="category.name"
-                  :value="category.id"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="文章标签">
-              <el-select v-model="articleForm.tagIds" class="admin-panel__full-width" multiple collapse-tags collapse-tags-tooltip>
-                <el-option
-                  v-for="tag in adminState.tags"
-                  :key="tag.id"
-                  :label="tag.name"
-                  :value="tag.id"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-form-item label="文章正文">
-          <RichTextEditor
-            v-model="articleForm.content"
-            placeholder="输入文章正文，支持标题、列表、引用、代码块、表格等富文本内容"
-            :min-height="420"
-          />
-          <p class="admin-article-form__hint">
-            旧的 Markdown 正文会在打开编辑时自动转换为富文本 HTML。
-          </p>
-        </el-form-item>
-      </el-form>
-
-      <template #footer>
-        <el-button @click="closeDialog">取消</el-button>
-        <el-button :loading="adminState.loading" @click="submitArticleWithStatus(0)">
-          {{ isEditMode ? '保存草稿' : '创建草稿' }}
-        </el-button>
-        <el-button type="primary" :loading="adminState.loading" @click="submitArticleWithStatus(1)">
-          {{ isEditMode ? '保存并发布' : '发布文章' }}
-        </el-button>
-      </template>
-    </el-dialog>
   </section>
 </template>
 
@@ -631,13 +404,6 @@ async function handleArticleCommand(article: AdminArticleItem, command: string |
 
 .admin-article-actions :deep(.el-button) {
   width: 100%;
-}
-
-.admin-article-form__hint {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
 }
 
 @media (max-width: 960px) {

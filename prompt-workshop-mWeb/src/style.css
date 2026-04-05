@@ -476,6 +476,12 @@ button:hover {
   gap: 8px;
 }
 
+.admin-table-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
 .admin-muted {
   color: var(--muted);
   font-size: 13px;
@@ -600,5 +606,9 @@ button:hover {
   .admin-summary-item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .admin-table-pagination {
+    justify-content: center;
   }
 }

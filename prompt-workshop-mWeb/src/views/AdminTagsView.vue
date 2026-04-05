@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import {
   adminState,
   createTagItem,
   deleteTagItem,
+  loadTags,
   loadDashboard,
   updateTagItem,
   type TagItem,
@@ -47,6 +48,7 @@ async function submitCreateTag() {
   createTagForm.name = ''
   createDialogVisible.value = false
   await loadDashboard({ silent: true })
+  await loadTags({ page: 1, silent: true })
 }
 
 function openCreateDialog() {
@@ -86,6 +88,7 @@ async function saveTag(tagId: number) {
 
   cancelEditTag()
   await loadDashboard({ silent: true })
+  await loadTags({ silent: true })
 }
 
 async function removeTag(tagId: number) {
@@ -100,7 +103,24 @@ async function removeTag(tagId: number) {
   }
 
   await loadDashboard({ silent: true })
+  const targetPage =
+    adminState.tags.length === 1 && adminState.tagPagination.page > 1
+      ? adminState.tagPagination.page - 1
+      : adminState.tagPagination.page
+  await loadTags({ page: targetPage, silent: true })
 }
+
+function handlePageChange(page: number) {
+  void loadTags({ page })
+}
+
+function handlePageSizeChange(pageSize: number) {
+  void loadTags({ page: 1, pageSize })
+}
+
+onMounted(() => {
+  void loadTags({ silent: true })
+})
 </script>
 
 <template>
@@ -117,7 +137,12 @@ async function removeTag(tagId: number) {
         </el-button>
       </div>
 
-      <el-table :data="adminState.tags" stripe empty-text="当前还没有标签">
+      <el-table
+        v-loading="adminState.tagsLoading"
+        :data="adminState.tags"
+        stripe
+        empty-text="当前还没有标签"
+      >
         <el-table-column prop="name" label="标签名称" min-width="220" />
         <el-table-column prop="updatedAt" label="更新时间" min-width="180">
           <template #default="{ row }">
@@ -142,6 +167,19 @@ async function removeTag(tagId: number) {
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="admin-table-pagination">
+        <el-pagination
+          background
+          layout="total, sizes, prev, pager, next"
+          :current-page="adminState.tagPagination.page"
+          :page-size="adminState.tagPagination.pageSize"
+          :page-sizes="[10, 20, 50]"
+          :total="adminState.tagPagination.total"
+          @current-change="handlePageChange"
+          @size-change="handlePageSizeChange"
+        />
+      </div>
     </article>
 
     <el-dialog v-model="createDialogVisible" title="创建标签" width="520px" @close="closeCreateDialog">

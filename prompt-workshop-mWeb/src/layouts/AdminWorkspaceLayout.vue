@@ -2,7 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { RefreshRight } from '@element-plus/icons-vue'
-import { adminState, loadDashboard, logoutAdmin, roleLabel } from '../modules/admin'
+import { adminState, loadDashboard, logoutAdmin, refreshAdminWorkspace, roleLabel, type AdminRouteName } from '../modules/admin'
 
 const route = useRoute()
 const router = useRouter()
@@ -45,7 +45,8 @@ async function ensureLoaded() {
 }
 
 async function refreshDashboard() {
-  const success = await loadDashboard()
+  const routeName = typeof route.name === 'string' ? (route.name as AdminRouteName) : undefined
+  const success = await refreshAdminWorkspace(routeName)
 
   if (!success) {
     void router.replace('/login')

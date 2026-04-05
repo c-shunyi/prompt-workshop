@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { execute, queryOne, queryRows } from '../db/client';
 import { signAdminToken } from '../utils/jwt';
+import { type PaginationParams, type PaginatedResult, normalizePagination } from '../utils/pagination';
 import { AdminRole } from '../types';
 
 interface AdminUserRecord {
@@ -85,19 +86,47 @@ export async function adminLogin(username: string, password: string) {
  * 获取管理员列表（仅超级管理员可调用）
  * @returns 管理员列表（不含密码哈希）
  */
-export async function getAdminList() {
-  return queryRows<Omit<AdminUserRecord, 'passwordHash' | 'updatedAt'>>(
-    `SELECT
-      id,
-      username,
-      nickname,
-      role,
-      status,
-      last_login_at AS lastLoginAt,
-      created_at AS createdAt
-    FROM admin_users
-    ORDER BY created_at DESC`,
+export async function getAdminList(
+  params: PaginationParams = {},
+): Promise<PaginatedResult<Omit<AdminUserRecord, 'passwordHash' | 'updatedAt'>>> {
+  const { page, pageSize, offset } = normalizePagination(params);
+
+  const [list, totalRow] = await Promise.all([
+    queryRows<Omit<AdminUserRecord, 'passwordHash' | 'updatedAt'>>(
+      `SELECT
+        id,
+        username,
+        nickname,
+        role,
+        status,
+        last_login_at AS lastLoginAt,
+        created_at AS createdAt
+      FROM admin_users
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?`,
+      [pageSize, offset],
+    ),
+    queryOne<{ total: number }>(
+      `SELECT CAST(COUNT(*) AS SIGNED) AS total
+      FROM admin_users`,
+    ),
+  ]);
+
+  return {
+    list,
+    total: totalRow?.total ?? 0,
+    page,
+    pageSize,
+  };
+}
+
+export async function getAdminCount() {
+  const result = await queryOne<{ total: number }>(
+    `SELECT CAST(COUNT(*) AS SIGNED) AS total
+    FROM admin_users`,
   );
+
+  return result?.total ?? 0;
 }
 
 /**

@@ -8,8 +8,10 @@ function parseStatus(value: unknown) {
 
 export async function getCategories(_req: Request, res: Response, next: NextFunction) {
   try {
-    const list = await contentService.listAdminCategories();
-    success(res, list);
+    const page = Number(_req.query.page);
+    const pageSize = Number(_req.query.pageSize);
+    const result = await contentService.listAdminCategories({ page, pageSize });
+    success(res, result);
   } catch (error) {
     next(error);
   }
@@ -77,8 +79,10 @@ export async function deleteCategory(req: Request, res: Response, next: NextFunc
 
 export async function getTags(_req: Request, res: Response, next: NextFunction) {
   try {
-    const list = await contentService.listTags();
-    success(res, list);
+    const page = Number(_req.query.page);
+    const pageSize = Number(_req.query.pageSize);
+    const result = await contentService.listAdminTags({ page, pageSize });
+    success(res, result);
   } catch (error) {
     next(error);
   }
@@ -137,10 +141,13 @@ export async function deleteTag(req: Request, res: Response, next: NextFunction)
 
 export async function getArticles(req: Request, res: Response, next: NextFunction) {
   try {
+    const page = Number(req.query.page);
+    const pageSize = Number(req.query.pageSize);
     const keyword = typeof req.query.keyword === 'string' ? req.query.keyword.trim() : undefined;
-    const status = req.query.status !== undefined ? Number(req.query.status) : undefined;
-    const list = await contentService.listAdminArticles({ keyword, status });
-    success(res, list);
+    const parsedStatus = req.query.status !== undefined ? Number(req.query.status) : undefined;
+    const status = parsedStatus !== undefined && [0, 1, 2].includes(parsedStatus) ? parsedStatus : undefined;
+    const result = await contentService.listAdminArticles({ page, pageSize, keyword, status });
+    success(res, result);
   } catch (error) {
     next(error);
   }
