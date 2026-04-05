@@ -424,6 +424,21 @@ button:hover {
   width: 100%;
 }
 
+.admin-table-input {
+  width: 100%;
+}
+
+.admin-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .admin-panel__submit {
   margin-top: 8px;
   min-height: 46px;

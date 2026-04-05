@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { authState, hydrateSession } from '../modules/auth'
+import ArticleDetailView from '../views/ArticleDetailView.vue'
+import EditorView from '../views/EditorView.vue'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import ProfileView from '../views/ProfileView.vue'
@@ -12,6 +14,23 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+    },
+    {
+      path: '/articles/:id',
+      name: 'article-detail',
+      component: ArticleDetailView,
+    },
+    {
+      path: '/editor',
+      name: 'article-create',
+      component: EditorView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/editor/:id',
+      name: 'article-edit',
+      component: EditorView,
+      meta: { requiresAuth: true },
     },
     {
       path: '/login',

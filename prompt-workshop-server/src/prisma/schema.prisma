@@ -36,6 +36,9 @@ model User {
   lastLoginAt  DateTime? @map("last_login_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
+  articles      Article[]
+  articleLikes  ArticleLike[]
+  favorites     ArticleFavorite[]
 
   @@index([status])
   @@map("users")
@@ -54,4 +57,94 @@ model AdminUser {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   @@map("admin_users")
+}
+
+model Article {
+  id            Int               @id @default(autoincrement())
+  userId        Int               @map("user_id")
+  categoryId    Int?              @map("category_id")
+  title         String            @db.VarChar(255)
+  summary       String?           @db.VarChar(500)
+  content       String            @db.LongText
+  status        Int               @default(0)
+  viewCount     Int               @default(0) @map("view_count")
+  likeCount     Int               @default(0) @map("like_count")
+  favoriteCount Int               @default(0) @map("favorite_count")
+  publishedAt   DateTime?         @map("published_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category      Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  articleTags   ArticleTag[]
+  likes         ArticleLike[]
+  favorites     ArticleFavorite[]
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([status, publishedAt])
+  @@map("articles")
+}
+
+model Category {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique @db.VarChar(50)
+  slug       String    @unique @db.VarChar(50)
+  sort       Int       @default(0)
+  status     Int       @default(1)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  articles   Article[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique @db.VarChar(50)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  articleTags ArticleTag[]
+
+  @@map("tags")
+}
+
+model ArticleTag {
+  id        Int      @id @default(autoincrement())
+  articleId Int      @map("article_id")
+  tagId     Int      @map("tag_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, tagId])
+  @@index([tagId])
+  @@map("article_tags")
+}
+
+model ArticleLike {
+  id        Int      @id @default(autoincrement())
+  articleId Int      @map("article_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, userId])
+  @@index([userId])
+  @@map("article_likes")
+}
+
+model ArticleFavorite {
+  id        Int      @id @default(autoincrement())
+  articleId Int      @map("article_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, userId])
+  @@index([userId])
+  @@map("article_favorites")
 }
