@@ -45,6 +45,17 @@ export type DeleteCategoryResult = {
   affectedArticles: number
 }
 
+export type DeleteArticleResult = {
+  id: number
+  title: string
+}
+
+export type DeleteTagResult = {
+  id: number
+  name: string
+  affectedArticles: number
+}
+
 export type ArticleTag = {
   id: number
   name: string
@@ -67,6 +78,7 @@ export type AdminArticleItem = {
   authorNickname?: string | null
   categoryName?: string | null
   tags: ArticleTag[]
+  content?: string
 }
 
 type ApiResponse<T> = {
@@ -150,13 +162,17 @@ async function request<T>(path: string, init?: RequestInit, authToken?: string) 
 }
 
 export function setFeedback(message: string, type: FeedbackType = 'info') {
-  adminState.feedbackMessage = message
   adminState.feedbackType = type
 
   if (type === 'success') {
+    adminState.feedbackMessage = ''
     ElMessage.success(message)
   } else if (type === 'error') {
+    adminState.feedbackMessage = message
     ElMessage.error(message)
+  } else {
+    adminState.feedbackMessage = ''
+    ElMessage.info(message)
   }
 }
 
@@ -465,6 +481,33 @@ export async function updateTagItem(id: number, input: { name: string }) {
   }
 }
 
+export async function deleteTagItem(id: number) {
+  adminState.loading = true
+
+  try {
+    const result = await request<DeleteTagResult>(
+      `/admin/tags/${id}`,
+      {
+        method: 'DELETE',
+      },
+      adminState.token,
+    )
+
+    setFeedback(
+      result.affectedArticles > 0
+        ? `标签《${result.name}》删除成功，已有 ${result.affectedArticles} 篇文章移除了该标签。`
+        : `标签《${result.name}》删除成功。`,
+      'success',
+    )
+    return true
+  } catch (error) {
+    setFeedback(error instanceof Error ? error.message : '删除标签失败', 'error')
+    return false
+  } finally {
+    adminState.loading = false
+  }
+}
+
 export async function updateArticleStatusByAdmin(articleId: number, status: 0 | 1 | 2) {
   adminState.loading = true
 
@@ -482,6 +525,87 @@ export async function updateArticleStatusByAdmin(articleId: number, status: 0 | 
     return true
   } catch (error) {
     setFeedback(error instanceof Error ? error.message : '更新文章状态失败', 'error')
+    return false
+  } finally {
+    adminState.loading = false
+  }
+}
+
+export async function loadAdminArticleDetail(articleId: number) {
+  adminState.loading = true
+
+  try {
+    return await request<AdminArticleItem>(
+      `/admin/articles/${articleId}`,
+      {
+        method: 'GET',
+      },
+      adminState.token,
+    )
+  } catch (error) {
+    setFeedback(error instanceof Error ? error.message : '加载文章详情失败', 'error')
+    return null
+  } finally {
+    adminState.loading = false
+  }
+}
+
+export async function saveArticleByAdmin(input: {
+  articleId?: number
+  userId: number
+  title: string
+  summary: string
+  content: string
+  categoryId?: number | null
+  tagIds: number[]
+  status: number
+}) {
+  adminState.loading = true
+
+  try {
+    await request<AdminArticleItem>(
+      input.articleId ? `/admin/articles/${input.articleId}` : '/admin/articles',
+      {
+        method: input.articleId ? 'PATCH' : 'POST',
+        body: JSON.stringify({
+          userId: input.userId,
+          title: input.title,
+          summary: input.summary,
+          content: input.content,
+          categoryId: input.categoryId,
+          tagIds: input.tagIds,
+          status: input.status,
+        }),
+      },
+      adminState.token,
+    )
+
+    setFeedback(input.articleId ? '文章更新成功。' : '文章创建成功。', 'success')
+    return true
+  } catch (error) {
+    setFeedback(error instanceof Error ? error.message : '保存文章失败', 'error')
+    return false
+  } finally {
+    adminState.loading = false
+  }
+}
+
+export async function deleteArticleByAdmin(articleId: number) {
+  adminState.loading = true
+
+  try {
+    const result = await request<DeleteArticleResult>(
+      `/admin/articles/${articleId}`,
+      {
+        method: 'DELETE',
+      },
+      adminState.token,
+    )
+
+    setFeedback(`文章《${result.title}》已删除。`, 'success')
+    return true
+  } catch (error) {
+    setFeedback(error instanceof Error ? error.message : '删除文章失败', 'error')
     return false
   } finally {
     adminState.loading = false

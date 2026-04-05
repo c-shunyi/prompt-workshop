@@ -84,8 +84,8 @@ const router = createRouter({
           component: AdminArticlesView,
           meta: {
             requiresAuth: true,
-            title: '文章审核',
-            description: '按路由切换到文章审核区，维护文章发布状态。',
+            title: '文章管理',
+            description: '发布、编辑、下架、删除文章，并维护文章内容状态。',
           },
         },
       ],

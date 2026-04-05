@@ -21,7 +21,7 @@ const navItems = computed(() => {
     { to: '/dashboard/users', label: '用户管理', visible: true },
     { to: '/dashboard/categories', label: '分类管理', visible: true },
     { to: '/dashboard/tags', label: '标签管理', visible: true },
-    { to: '/dashboard/articles', label: '文章审核', visible: true },
+    { to: '/dashboard/articles', label: '文章管理', visible: true },
   ]
 
   return items.filter((item) => item.visible)
@@ -117,6 +117,7 @@ onMounted(() => {
 
       <section class="admin-layout__content">
         <el-alert
+          v-if="adminState.feedbackMessage && adminState.feedbackType === 'error'"
           :title="adminState.feedbackMessage"
           :type="adminState.feedbackType"
           show-icon

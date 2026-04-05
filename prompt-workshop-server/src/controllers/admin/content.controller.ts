@@ -119,12 +119,106 @@ export async function updateTag(req: Request, res: Response, next: NextFunction)
   }
 }
 
+export async function deleteTag(req: Request, res: Response, next: NextFunction) {
+  try {
+    const tagId = Number(req.params.id);
+
+    if (!Number.isInteger(tagId) || tagId <= 0) {
+      fail(res, '无效的标签 ID', 400);
+      return;
+    }
+
+    const result = await contentService.deleteTag(tagId);
+    success(res, result, '标签删除成功');
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getArticles(req: Request, res: Response, next: NextFunction) {
   try {
     const keyword = typeof req.query.keyword === 'string' ? req.query.keyword.trim() : undefined;
     const status = req.query.status !== undefined ? Number(req.query.status) : undefined;
     const list = await contentService.listAdminArticles({ keyword, status });
     success(res, list);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getArticleDetail(req: Request, res: Response, next: NextFunction) {
+  try {
+    const articleId = Number(req.params.id);
+
+    if (!Number.isInteger(articleId) || articleId <= 0) {
+      fail(res, '无效的文章 ID', 400);
+      return;
+    }
+
+    const article = await contentService.getAdminEditableArticle(articleId);
+
+    if (!article) {
+      fail(res, '文章不存在', 404);
+      return;
+    }
+
+    success(res, article);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createArticle(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { userId, title, summary, content, categoryId, status } = req.body;
+
+    if (!userId || !title || !content) {
+      fail(res, '作者、标题和正文不能为空', 400);
+      return;
+    }
+
+    const article = await contentService.createAdminArticle({
+      userId: Number(userId),
+      title,
+      summary,
+      content,
+      categoryId: categoryId ? Number(categoryId) : null,
+      tagIds: Array.isArray(req.body.tagIds) ? req.body.tagIds.map((item: unknown) => Number(item)) : [],
+      status: status !== undefined ? Number(status) : undefined,
+    });
+
+    success(res, article, '文章创建成功');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateArticle(req: Request, res: Response, next: NextFunction) {
+  try {
+    const articleId = Number(req.params.id);
+    const { userId, title, summary, content, categoryId, status } = req.body;
+
+    if (!Number.isInteger(articleId) || articleId <= 0) {
+      fail(res, '无效的文章 ID', 400);
+      return;
+    }
+
+    if (!userId || !title || !content) {
+      fail(res, '作者、标题和正文不能为空', 400);
+      return;
+    }
+
+    const article = await contentService.updateAdminArticle(articleId, {
+      userId: Number(userId),
+      title,
+      summary,
+      content,
+      categoryId: categoryId ? Number(categoryId) : null,
+      tagIds: Array.isArray(req.body.tagIds) ? req.body.tagIds.map((item: unknown) => Number(item)) : [],
+      status: status !== undefined ? Number(status) : undefined,
+    });
+
+    success(res, article, '文章更新成功');
   } catch (error) {
     next(error);
   }
@@ -142,6 +236,22 @@ export async function updateArticleStatus(req: Request, res: Response, next: Nex
 
     const article = await contentService.updateAdminArticleStatus(articleId, status);
     success(res, article, '文章状态更新成功');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteArticle(req: Request, res: Response, next: NextFunction) {
+  try {
+    const articleId = Number(req.params.id);
+
+    if (!Number.isInteger(articleId) || articleId <= 0) {
+      fail(res, '无效的文章 ID', 400);
+      return;
+    }
+
+    const result = await contentService.deleteAdminArticle(articleId);
+    success(res, result, '文章删除成功');
   } catch (error) {
     next(error);
   }

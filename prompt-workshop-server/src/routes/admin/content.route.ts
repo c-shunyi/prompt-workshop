@@ -16,8 +16,13 @@ router.delete('/categories/:id', contentController.deleteCategory);
 router.get('/tags', contentController.getTags);
 router.post('/tags', contentController.createTag);
 router.patch('/tags/:id', contentController.updateTag);
+router.delete('/tags/:id', contentController.deleteTag);
 
 router.get('/articles', contentController.getArticles);
+router.get('/articles/:id', contentController.getArticleDetail);
+router.post('/articles', contentController.createArticle);
+router.patch('/articles/:id', contentController.updateArticle);
 router.patch('/articles/:id/status', contentController.updateArticleStatus);
+router.delete('/articles/:id', contentController.deleteArticle);
 
 export default router;

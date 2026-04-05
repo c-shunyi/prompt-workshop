@@ -87,6 +87,10 @@ export interface ArticleMutationInput {
   status?: number;
 }
 
+export interface AdminArticleMutationInput extends ArticleMutationInput {
+  userId: number;
+}
+
 function normalizeTagIds(tagIds: number[] = []) {
   return [...new Set(tagIds.filter((id) => Number.isInteger(id) && id > 0))];
 }
@@ -115,6 +119,17 @@ async function ensureCategoryExists(categoryId?: number | null) {
 
   if (!category) {
     throw new Error('分类不存在');
+  }
+}
+
+async function ensureUserExists(userId: number) {
+  const user = await queryOne<{ id: number }>(
+    'SELECT id FROM users WHERE id = ? LIMIT 1',
+    [userId],
+  );
+
+  if (!user) {
+    throw new Error('文章作者不存在');
   }
 }
 
@@ -478,6 +493,39 @@ export async function updateTag(id: number, input: { name?: string }) {
   );
 }
 
+export async function deleteTag(id: number) {
+  const tag = await queryOne<TagItem>(
+    `SELECT
+      id,
+      name,
+      created_at AS createdAt,
+      updated_at AS updatedAt
+    FROM tags
+    WHERE id = ?
+    LIMIT 1`,
+    [id],
+  );
+
+  if (!tag) {
+    throw new Error('标签不存在');
+  }
+
+  const articleCount = await queryOne<{ total: number }>(
+    `SELECT CAST(COUNT(DISTINCT article_id) AS SIGNED) AS total
+    FROM article_tags
+    WHERE tag_id = ?`,
+    [id],
+  );
+
+  await execute('DELETE FROM tags WHERE id = ?', [id]);
+
+  return {
+    id,
+    name: tag.name,
+    affectedArticles: articleCount?.total ?? 0,
+  };
+}
+
 export async function listPublicArticles(params: {
   page?: number;
   pageSize?: number;
@@ -585,6 +633,26 @@ export async function getEditableArticle(
   return article ?? null;
 }
 
+export async function getAdminEditableArticle(
+  id: number,
+  executor?: Parameters<typeof queryOne>[2],
+) {
+  const row = await queryOne<ArticleRow>(
+    `${articleBaseSelect(true)}
+    WHERE a.id = ?
+    LIMIT 1`,
+    [id],
+    executor,
+  );
+
+  if (!row) {
+    return null;
+  }
+
+  const [article] = await enrichArticles([row], undefined, executor);
+  return article ?? null;
+}
+
 export async function createArticle(userId: number, input: ArticleMutationInput) {
   const tagIds = normalizeTagIds(input.tagIds);
   const status = ensureArticleStatus(input.status, 0);
@@ -658,6 +726,83 @@ export async function updateArticle(userId: number, articleId: number, input: Ar
 
     await syncArticleTags(articleId, tagIds, connection);
     return getEditableArticle(userId, articleId, connection);
+  });
+}
+
+export async function createAdminArticle(input: AdminArticleMutationInput) {
+  const tagIds = normalizeTagIds(input.tagIds);
+  const status = ensureArticleStatus(input.status, 0);
+
+  await ensureUserExists(input.userId);
+  await ensureCategoryExists(input.categoryId);
+  await ensureTagsExist(tagIds);
+
+  return withTransaction(async (connection) => {
+    const result = await execute(
+      `INSERT INTO articles
+        (user_id, category_id, title, summary, content, status, published_at, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [
+        input.userId,
+        input.categoryId ?? null,
+        input.title,
+        input.summary ?? null,
+        input.content,
+        status,
+        status === 1 ? new Date() : null,
+      ],
+      connection,
+    );
+
+    const articleId = Number((result as { insertId: number }).insertId);
+    await syncArticleTags(articleId, tagIds, connection);
+
+    return getAdminEditableArticle(articleId, connection);
+  });
+}
+
+export async function updateAdminArticle(articleId: number, input: AdminArticleMutationInput) {
+  const existing = await queryOne<{ id: number; publishedAt: Date | null }>(
+    `SELECT
+      id,
+      published_at AS publishedAt
+    FROM articles
+    WHERE id = ?
+    LIMIT 1`,
+    [articleId],
+  );
+
+  if (!existing) {
+    throw new Error('文章不存在');
+  }
+
+  const tagIds = normalizeTagIds(input.tagIds);
+  const status = ensureArticleStatus(input.status, 0);
+
+  await ensureUserExists(input.userId);
+  await ensureCategoryExists(input.categoryId);
+  await ensureTagsExist(tagIds);
+
+  return withTransaction(async (connection) => {
+    await execute(
+      `UPDATE articles
+      SET user_id = ?, category_id = ?, title = ?, summary = ?, content = ?, status = ?, published_at = ?, updated_at = NOW()
+      WHERE id = ?`,
+      [
+        input.userId,
+        input.categoryId ?? null,
+        input.title,
+        input.summary ?? null,
+        input.content,
+        status,
+        status === 1 ? existing.publishedAt ?? new Date() : null,
+        articleId,
+      ],
+      connection,
+    );
+
+    await syncArticleTags(articleId, tagIds, connection);
+    return getAdminEditableArticle(articleId, connection);
   });
 }
 
@@ -762,4 +907,22 @@ export async function updateAdminArticleStatus(articleId: number, status: number
 
   const rows = await listAdminArticles({});
   return rows.find((item) => item.id === articleId) ?? null;
+}
+
+export async function deleteAdminArticle(articleId: number) {
+  const existing = await queryOne<{ id: number; title: string }>(
+    'SELECT id, title FROM articles WHERE id = ? LIMIT 1',
+    [articleId],
+  );
+
+  if (!existing) {
+    throw new Error('文章不存在');
+  }
+
+  await execute('DELETE FROM articles WHERE id = ?', [articleId]);
+
+  return {
+    id: existing.id,
+    title: existing.title,
+  };
 }

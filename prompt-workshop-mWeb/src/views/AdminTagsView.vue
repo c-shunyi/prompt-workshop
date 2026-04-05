@@ -2,7 +2,14 @@
 import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import { adminState, createTagItem, loadDashboard, updateTagItem, type TagItem } from '../modules/admin'
+import {
+  adminState,
+  createTagItem,
+  deleteTagItem,
+  loadDashboard,
+  updateTagItem,
+  type TagItem,
+} from '../modules/admin'
 
 const createTagForm = reactive({
   name: '',
@@ -80,6 +87,20 @@ async function saveTag(tagId: number) {
   cancelEditTag()
   await loadDashboard({ silent: true })
 }
+
+async function removeTag(tagId: number) {
+  const success = await deleteTagItem(tagId)
+
+  if (!success) {
+    return
+  }
+
+  if (editingTagId.value === tagId) {
+    cancelEditTag()
+  }
+
+  await loadDashboard({ silent: true })
+}
 </script>
 
 <template>
@@ -105,7 +126,19 @@ async function saveTag(tagId: number) {
         </el-table-column>
         <el-table-column label="操作" min-width="220" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" plain @click="startEditTag(row)">编辑</el-button>
+            <el-space>
+              <el-button size="small" plain @click="startEditTag(row)">编辑</el-button>
+              <el-popconfirm
+                title="删除标签后，不会删除文章，只会移除文章上的该标签，确认继续吗？"
+                confirm-button-text="确认删除"
+                cancel-button-text="取消"
+                @confirm="removeTag(row.id)"
+              >
+                <template #reference>
+                  <el-button size="small" type="danger" plain :loading="adminState.loading">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </el-space>
           </template>
         </el-table-column>
       </el-table>

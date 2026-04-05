@@ -36,7 +36,7 @@ async function submitLogin() {
       </div>
 
       <el-alert
-        v-if="adminState.feedbackMessage"
+        v-if="adminState.feedbackMessage && adminState.feedbackType === 'error'"
         :title="adminState.feedbackMessage"
         :type="adminState.feedbackType"
         show-icon
