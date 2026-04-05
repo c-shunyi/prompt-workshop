@@ -22,17 +22,35 @@ model Example {
   @@map("examples")
 }
 
+/// 前台用户模型
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(50)
+  email        String    @unique @db.VarChar(100)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  nickname     String?   @db.VarChar(50)
+  avatar       String?   @db.VarChar(255)
+  bio          String?   @db.VarChar(255)
+  status       Int       @default(1) /// 状态：1-正常 0-禁用
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("users")
+}
+
 /// 管理员用户模型
 model AdminUser {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique @db.VarChar(50)
-  passwordHash String   @map("password_hash") @db.VarChar(255)
-  nickname     String?  @db.VarChar(50)
-  role         String   @default("admin") @db.VarChar(20) /// 角色：admin | super_admin
-  status       Int      @default(1) /// 状态：1-启用 0-禁用
+  id           Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(50)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  nickname     String?   @db.VarChar(50)
+  role         String    @default("admin") @db.VarChar(20) /// 角色：admin | super_admin
+  status       Int       @default(1) /// 状态：1-启用 0-禁用
   lastLoginAt  DateTime? @map("last_login_at")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
   @@map("admin_users")
 }

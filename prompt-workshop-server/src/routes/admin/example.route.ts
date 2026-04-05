@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import * as exampleController from '../../controllers/admin/example.controller';
 import { adminAuthMiddleware } from '../../middlewares/auth.middleware';
 import { requireRole } from '../../middlewares/role.middleware';
@@ -9,7 +9,7 @@ import { AdminRole } from '../../types';
  * 挂载路径：/api/admin/examples
  * 所有接口均需管理台鉴权 + 角色权限校验
  */
-const router = Router();
+const router: ExpressRouter = Router();
 
 /** 管理台鉴权 + 角色校验中间件（admin 和 super_admin 均可访问） */
 const authAndRole = [

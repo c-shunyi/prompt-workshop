@@ -22,7 +22,7 @@ export async function getList(req: Request, res: Response, next: NextFunction) {
 /** 根据 ID 获取示例详情 */
 export async function getById(req: Request, res: Response, next: NextFunction) {
   try {
-    const id = parseInt(req.params.id);
+    const id = Number(req.params.id);
     const example = await exampleService.getExampleById(id);
     if (!example) {
       fail(res, '记录不存在', 404);
@@ -52,7 +52,7 @@ export async function create(req: Request, res: Response, next: NextFunction) {
 /** 更新示例记录 */
 export async function update(req: Request, res: Response, next: NextFunction) {
   try {
-    const id = parseInt(req.params.id);
+    const id = Number(req.params.id);
     const { title, description, status } = req.body;
     const example = await exampleService.updateExample(id, { title, description, status });
     success(res, example, '更新成功');
@@ -64,7 +64,7 @@ export async function update(req: Request, res: Response, next: NextFunction) {
 /** 删除示例记录 */
 export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
-    const id = parseInt(req.params.id);
+    const id = Number(req.params.id);
     await exampleService.deleteExample(id);
     success(res, null, '删除成功');
   } catch (err) {

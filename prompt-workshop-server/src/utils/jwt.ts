@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { type SignOptions } from 'jsonwebtoken';
 import config from '../config';
 import { JwtPayload, AdminJwtPayload } from '../types';
 
@@ -9,7 +9,7 @@ import { JwtPayload, AdminJwtPayload } from '../types';
  */
 export function signToken(payload: JwtPayload): string {
   return jwt.sign(payload, config.jwt.secret, {
-    expiresIn: config.jwt.expiresIn,
+    expiresIn: config.jwt.expiresIn as SignOptions['expiresIn'],
   });
 }
 
@@ -29,7 +29,7 @@ export function verifyToken(token: string): JwtPayload {
  */
 export function signAdminToken(payload: AdminJwtPayload): string {
   return jwt.sign(payload, config.jwtAdmin.secret, {
-    expiresIn: config.jwtAdmin.expiresIn,
+    expiresIn: config.jwtAdmin.expiresIn as SignOptions['expiresIn'],
   });
 }
 

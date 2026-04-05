@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Express } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import routes from './routes';
@@ -9,7 +9,7 @@ import config from './config';
  * Express 应用入口
  * 配置中间件、挂载路由、注册全局错误处理
  */
-const app = express();
+const app: Express = express();
 
 // ==================== 基础中间件 ====================
 

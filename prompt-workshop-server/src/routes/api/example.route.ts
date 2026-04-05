@@ -1,11 +1,11 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import * as exampleController from '../../controllers/api/example.controller';
 
 /**
  * 客户端示例路由
  * 挂载路径：/api/examples
  */
-const router = Router();
+const router: ExpressRouter = Router();
 
 /** 获取列表 - GET /api/examples */
 router.get('/', exampleController.getList);

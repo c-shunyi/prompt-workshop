@@ -129,6 +129,20 @@ exports.Prisma.ExampleScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.UserScalarFieldEnum = {
+  id: 'id',
+  username: 'username',
+  email: 'email',
+  passwordHash: 'passwordHash',
+  nickname: 'nickname',
+  avatar: 'avatar',
+  bio: 'bio',
+  status: 'status',
+  lastLoginAt: 'lastLoginAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.AdminUserScalarFieldEnum = {
   id: 'id',
   username: 'username',
@@ -156,6 +170,15 @@ exports.Prisma.ExampleOrderByRelevanceFieldEnum = {
   description: 'description'
 };
 
+exports.Prisma.UserOrderByRelevanceFieldEnum = {
+  username: 'username',
+  email: 'email',
+  passwordHash: 'passwordHash',
+  nickname: 'nickname',
+  avatar: 'avatar',
+  bio: 'bio'
+};
+
 exports.Prisma.AdminUserOrderByRelevanceFieldEnum = {
   username: 'username',
   passwordHash: 'passwordHash',
@@ -166,6 +189,7 @@ exports.Prisma.AdminUserOrderByRelevanceFieldEnum = {
 
 exports.Prisma.ModelName = {
   Example: 'Example',
+  User: 'User',
   AdminUser: 'AdminUser'
 };
 

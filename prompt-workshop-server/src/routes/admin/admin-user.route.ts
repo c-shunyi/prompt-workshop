@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import * as adminUserController from '../../controllers/admin/admin-user.controller';
 import { adminAuthMiddleware } from '../../middlewares/auth.middleware';
 import { requireRole } from '../../middlewares/role.middleware';
@@ -8,7 +8,7 @@ import { AdminRole } from '../../types';
  * 管理员用户路由
  * 挂载路径：/api/admin
  */
-const router = Router();
+const router: ExpressRouter = Router();
 
 /** 管理员登录（无需鉴权） - POST /api/admin/login */
 router.post('/login', adminUserController.login);
