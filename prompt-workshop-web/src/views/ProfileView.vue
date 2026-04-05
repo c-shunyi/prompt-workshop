@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import WebTopNav from '../components/WebTopNav.vue'
 import { authState, loadProfile, logoutUser, userDisplayName } from '../modules/auth'
 import { contentState, loadMyArticles } from '../modules/content'
 
@@ -29,7 +30,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="user-shell">
+  <div class="user-shell user-shell--wide">
+    <WebTopNav active="profile" />
+
     <section class="hero-card">
       <div class="hero-copy">
         <p class="eyebrow">User Center</p>

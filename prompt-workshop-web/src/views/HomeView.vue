@@ -1,185 +1,210 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, reactive, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import WebTopNav from '../components/WebTopNav.vue'
 import { authState } from '../modules/auth'
 import { contentState, loadHomeArticles, loadMeta } from '../modules/content'
 
+const route = useRoute()
 const router = useRouter()
 
 const filters = reactive({
   keyword: '',
-  categoryId: 0,
 })
 
+const selectedCategoryId = computed(() => {
+  const rawValue = Number(route.query.category)
+  return Number.isInteger(rawValue) && rawValue > 0 ? rawValue : 0
+})
+
+const selectedCategory = computed(
+  () => contentState.categories.find((category) => category.id === selectedCategoryId.value) ?? null,
+)
+
 const featuredArticle = computed(() => contentState.homeArticles[0] ?? null)
-const restArticles = computed(() => contentState.homeArticles.slice(1))
-
-function openLogin() {
-  void router.push('/login')
-}
-
-function openRegister() {
-  void router.push('/register')
-}
-
-function openProfile() {
-  void router.push('/profile')
-}
-
-function openEditor() {
-  void router.push('/editor')
-}
+const articleList = computed(() => contentState.homeArticles)
 
 function openArticle(articleId: number) {
   void router.push(`/articles/${articleId}`)
 }
 
-function applyFilters() {
-  void loadHomeArticles({
-    keyword: filters.keyword.trim() || undefined,
-    categoryId: filters.categoryId || undefined,
+function updateQuery(params: { categoryId?: number; keyword?: string }) {
+  const nextQuery: Record<string, string> = {}
+
+  if (params.categoryId) {
+    nextQuery.category = String(params.categoryId)
+  }
+
+  if (params.keyword) {
+    nextQuery.keyword = params.keyword
+  }
+
+  void router.push({
+    path: '/',
+    query: nextQuery,
   })
 }
 
+function selectCategory(categoryId?: number) {
+  updateQuery({
+    categoryId,
+    keyword: filters.keyword.trim() || undefined,
+  })
+}
+
+function submitSearch() {
+  updateQuery({
+    categoryId: selectedCategoryId.value || undefined,
+    keyword: filters.keyword.trim() || undefined,
+  })
+}
+
+watch(
+  () => route.query,
+  () => {
+    filters.keyword = typeof route.query.keyword === 'string' ? route.query.keyword : ''
+
+    void loadHomeArticles({
+      keyword: filters.keyword.trim() || undefined,
+      categoryId: selectedCategoryId.value || undefined,
+    })
+  },
+  { immediate: true },
+)
+
 onMounted(() => {
   void loadMeta()
-  void loadHomeArticles()
 })
 </script>
 
 <template>
-  <div class="user-shell">
-    <section class="landing-card">
-      <div class="landing-copy">
-        <p class="eyebrow">Prompt Workshop Web</p>
-        <h1>文章分享平台</h1>
-        <p class="landing-text">
-          现在首页已经切成真实内容流。你可以浏览已发布文章、按分类筛选，登录后进入个人中心，或者直接开始创作。
-        </p>
-
-        <div class="landing-actions">
-          <button v-if="!authState.currentUser" class="primary-btn" type="button" @click="openLogin">立即登录</button>
-          <button v-if="!authState.currentUser" class="ghost-btn" type="button" @click="openRegister">去注册</button>
-          <button v-else class="primary-btn" type="button" @click="openProfile">进入个人中心</button>
-          <button v-if="authState.currentUser" class="ghost-btn" type="button" @click="openEditor">写文章</button>
-        </div>
-
-        <div class="hero-pills">
-          <span>已接后端文章接口</span>
-          <span>支持分类筛选</span>
-          <span>支持个人发布</span>
-        </div>
-      </div>
-
-      <div class="landing-panel">
-        <p class="status-label">推荐文章</p>
-        <template v-if="featuredArticle">
-          <p class="status-message">{{ featuredArticle.title }}</p>
-          <p class="status-meta">
-            {{ featuredArticle.summary || '这篇文章还没有填写摘要。' }}
-          </p>
-          <button class="ghost-btn inline-btn" type="button" @click="openArticle(featuredArticle.id)">
-            阅读全文
-          </button>
-        </template>
-        <template v-else>
-          <p class="status-message">还没有已发布文章</p>
-          <p class="status-meta">登录后可以先去创建第一篇文章。</p>
-        </template>
-      </div>
-    </section>
-
-    <main class="content-grid">
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <p class="panel-kicker">内容筛选</p>
-            <h2>查找文章</h2>
-          </div>
-        </div>
-
-        <form class="form-grid" @submit.prevent="applyFilters">
-          <label>
-            <span>关键词</span>
-            <input v-model.trim="filters.keyword" placeholder="搜索标题、摘要或正文" />
-          </label>
-
-          <label>
-            <span>分类</span>
-            <select v-model.number="filters.categoryId" class="article-select">
-              <option :value="0">全部分类</option>
-              <option v-for="category in contentState.categories" :key="category.id" :value="category.id">
-                {{ category.name }}
-              </option>
-            </select>
-          </label>
-
-          <button class="primary-btn" type="submit" :disabled="contentState.homeLoading">
-            {{ contentState.homeLoading ? '加载中...' : '应用筛选' }}
+  <div class="user-shell user-shell--wide">
+    <WebTopNav active="home">
+      <template #center>
+        <form class="site-search" @submit.prevent="submitSearch">
+          <input
+            v-model.trim="filters.keyword"
+            class="site-search__input"
+            placeholder="搜索标题、摘要或正文"
+          />
+          <button class="primary-btn site-search__button" type="submit">
+            搜索
           </button>
         </form>
-      </section>
+      </template>
+    </WebTopNav>
 
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <p class="panel-kicker">分类概览</p>
-            <h2>当前分类</h2>
-          </div>
+    <section class="home-hero">
+      <div class="home-hero__copy">
+        <p class="eyebrow">Discover Stories</p>
+        <h1>经典文章分享平台首页</h1>
+        <p class="hero-text">
+          顶部导航承载登录和发布入口，左侧是文章分类，右侧是当前分类下的文章内容流。现在已经按你说的结构切成真正的内容平台布局。
+        </p>
+        <div class="hero-pills">
+          <span>分类 {{ contentState.categories.length }} 个</span>
+          <span>文章 {{ contentState.homeArticles.length }} 篇</span>
+          <span>{{ authState.currentUser ? '已登录创作模式' : '访客浏览模式' }}</span>
+        </div>
+      </div>
+
+      <article v-if="featuredArticle" class="featured-story" @click="openArticle(featuredArticle.id)">
+        <p class="featured-story__label">精选文章</p>
+        <h2>{{ featuredArticle.title }}</h2>
+        <p>{{ featuredArticle.summary || '这篇文章暂时还没有摘要。' }}</p>
+        <div class="featured-story__meta">
+          <span>{{ featuredArticle.categoryName || '未分类' }}</span>
+          <span>{{ featuredArticle.authorNickname || featuredArticle.authorUsername }}</span>
+          <span>{{ featuredArticle.viewCount }} 浏览</span>
+        </div>
+      </article>
+    </section>
+
+    <main class="home-layout">
+      <aside class="category-sidebar">
+        <div class="category-sidebar__head">
+          <p class="panel-kicker">分类导航</p>
+          <h2>文章分类</h2>
         </div>
 
-        <div class="tag-cloud">
+        <div class="category-sidebar__list">
+          <button
+            class="category-link"
+            :class="{ 'category-link--active': selectedCategoryId === 0 }"
+            type="button"
+            @click="selectCategory()"
+          >
+            <span>全部文章</span>
+            <strong>{{ contentState.homeArticles.length }}</strong>
+          </button>
+
           <button
             v-for="category in contentState.categories"
             :key="category.id"
-            class="chip-btn"
+            class="category-link"
+            :class="{ 'category-link--active': selectedCategoryId === category.id }"
             type="button"
-            @click="filters.categoryId = category.id; applyFilters()"
+            @click="selectCategory(category.id)"
           >
-            {{ category.name }}
+            <span>{{ category.name }}</span>
+            <small>{{ category.slug }}</small>
           </button>
-          <p v-if="!contentState.categories.length" class="empty-copy">当前还没有分类，可以先去管理台添加。</p>
+        </div>
+
+        <div class="category-sidebar__footer">
+          <p class="status-label">当前分类</p>
+          <p class="status-message">{{ selectedCategory?.name || '全部文章' }}</p>
+          <p class="status-meta">
+            {{ selectedCategory ? '点击右侧文章可进入详情页阅读 Markdown 正文。' : '左侧点击分类即可切换右侧内容区。' }}
+          </p>
+        </div>
+      </aside>
+
+      <section class="article-stream">
+        <header class="article-stream__head">
+          <div>
+            <p class="panel-kicker">内容列表</p>
+            <h2>{{ selectedCategory?.name || '最新文章' }}</h2>
+            <p class="article-stream__intro">
+              {{ filters.keyword ? `当前关键词：${filters.keyword}` : '展示当前分类下的公开文章内容。' }}
+            </p>
+          </div>
+        </header>
+
+        <div v-if="articleList.length" class="article-list">
+          <article
+            v-for="article in articleList"
+            :key="article.id"
+            class="article-list-item"
+            @click="openArticle(article.id)"
+          >
+            <div class="article-list-item__meta">
+              <span>{{ article.categoryName || '未分类' }}</span>
+              <span>{{ article.authorNickname || article.authorUsername }}</span>
+              <span>{{ article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : '未发布' }}</span>
+            </div>
+
+            <h3>{{ article.title }}</h3>
+            <p>{{ article.summary || '暂无摘要，点击进入阅读完整 Markdown 内容。' }}</p>
+
+            <div class="chip-group">
+              <span v-for="tag in article.tags" :key="tag.id">{{ tag.name }}</span>
+              <span v-if="!article.tags.length">无标签</span>
+            </div>
+
+            <div class="article-list-item__footer">
+              <strong>{{ article.likeCount }} 赞</strong>
+              <span>{{ article.favoriteCount }} 收藏</span>
+              <span>{{ article.viewCount }} 浏览</span>
+            </div>
+          </article>
+        </div>
+
+        <div v-else class="empty-state article-stream__empty">
+          <p>{{ contentState.homeLoading ? '文章加载中...' : '当前分类下还没有文章。' }}</p>
+          <p>你可以切换其他分类，或者登录后发布第一篇 Markdown 文章。</p>
         </div>
       </section>
     </main>
-
-    <section class="panel article-feed-panel">
-      <div class="panel-head">
-        <div>
-          <p class="panel-kicker">文章流</p>
-          <h2>最新发布</h2>
-        </div>
-      </div>
-
-      <div v-if="restArticles.length || featuredArticle" class="article-grid">
-        <article
-          v-for="article in contentState.homeArticles"
-          :key="article.id"
-          class="article-card"
-          @click="openArticle(article.id)"
-        >
-          <div class="article-card__meta">
-            <span>{{ article.categoryName || '未分类' }}</span>
-            <span>{{ article.authorNickname || article.authorUsername }}</span>
-          </div>
-          <h3>{{ article.title }}</h3>
-          <p>{{ article.summary || '这篇文章还没有摘要，点击进入阅读全文。' }}</p>
-          <div class="chip-group">
-            <span v-for="tag in article.tags" :key="tag.id">{{ tag.name }}</span>
-            <span v-if="!article.tags.length">无标签</span>
-          </div>
-          <div class="article-card__footer">
-            <strong>{{ article.likeCount }} 赞</strong>
-            <span>{{ article.favoriteCount }} 收藏</span>
-            <span>{{ article.viewCount }} 浏览</span>
-          </div>
-        </article>
-      </div>
-
-      <div v-else class="empty-state">
-        <p>目前还没有文章。</p>
-        <p>登录后可以从个人中心或编辑页发布第一篇内容。</p>
-      </div>
-    </section>
   </div>
 </template>

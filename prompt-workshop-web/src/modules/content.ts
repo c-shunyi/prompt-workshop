@@ -148,6 +148,8 @@ export async function loadHomeArticles(params?: { categoryId?: number; keyword?:
 
     const payload = await request<ArticleListPayload>(
       `/articles${searchParams.toString() ? `?${searchParams.toString()}` : ''}`,
+      undefined,
+      authState.token || undefined,
     )
 
     contentState.homeArticles = payload.list
@@ -164,7 +166,7 @@ export async function loadArticleDetail(articleId: number) {
   contentState.detailLoading = true
 
   try {
-    const article = await request<ArticleItem>(`/articles/${articleId}`)
+    const article = await request<ArticleItem>(`/articles/${articleId}`, undefined, authState.token || undefined)
     contentState.articleDetail = article
     return article
   } catch (error) {
