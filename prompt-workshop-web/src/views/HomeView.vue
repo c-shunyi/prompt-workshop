@@ -161,16 +161,6 @@ onMounted(() => {
       </aside>
 
       <section class="article-stream">
-        <header class="article-stream__head">
-          <div>
-            <p class="panel-kicker">内容列表</p>
-            <h2>{{ selectedCategory?.name || '最新文章' }}</h2>
-            <p class="article-stream__intro">
-              {{ filters.keyword ? `当前关键词：${filters.keyword}` : '展示当前分类下的公开文章内容。' }}
-            </p>
-          </div>
-        </header>
-
         <div v-if="articleList.length" class="article-list">
           <article
             v-for="article in articleList"
@@ -201,8 +191,7 @@ onMounted(() => {
         </div>
 
         <div v-else class="empty-state article-stream__empty">
-          <p>{{ contentState.homeLoading ? '文章加载中...' : '当前分类下还没有文章。' }}</p>
-          <p>你可以切换其他分类，或者登录后发布第一篇 Markdown 文章。</p>
+          <p>{{ contentState.homeLoading ? '文章加载中...' : '当前没有文章。' }}</p>
         </div>
       </section>
     </main>
