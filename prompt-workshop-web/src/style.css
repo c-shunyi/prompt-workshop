@@ -51,6 +51,7 @@ button {
   padding: 32px 0 48px;
 }
 
+.landing-card,
 .hero-card,
 .panel {
   border: 1px solid var(--border);
@@ -58,12 +59,24 @@ button {
   backdrop-filter: blur(18px);
 }
 
+.landing-card,
 .hero-card {
   display: grid;
   grid-template-columns: 1.4fr 0.9fr;
   gap: 24px;
   padding: 28px;
   border-radius: 28px;
+}
+
+.landing-card {
+  min-height: min(72vh, 760px);
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 244, 230, 0.9)),
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.16), transparent 28%);
+}
+
+.hero-card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 248, 240, 0.82));
 }
 
@@ -77,30 +90,51 @@ button {
   color: var(--accent-dark);
 }
 
+.landing-copy h1,
 .hero-copy h1 {
   margin: 0;
-  font-size: clamp(2.2rem, 5vw, 4.4rem);
+  color: var(--ink);
   line-height: 0.95;
   letter-spacing: -0.05em;
 }
 
+.landing-copy h1 {
+  font-size: clamp(2.8rem, 7vw, 5.6rem);
+}
+
+.hero-copy h1 {
+  font-size: clamp(2.2rem, 5vw, 4.4rem);
+}
+
+.landing-text,
 .hero-text,
 .status-meta,
 .empty-state p,
-.profile-info p {
+.profile-info p,
+.journey-list p {
   color: var(--text-soft);
 }
 
+.landing-text,
 .hero-text {
   margin: 16px 0 0;
   max-width: 42rem;
   font-size: 1.02rem;
 }
 
+.landing-actions,
+.actions,
 .hero-pills {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.landing-actions {
+  margin-top: 24px;
+}
+
+.hero-pills {
   margin-top: 20px;
 }
 
@@ -115,11 +149,17 @@ button {
   background: rgba(16, 32, 51, 0.06);
 }
 
+.landing-panel,
 .status-panel {
   padding: 22px;
   border-radius: 22px;
   background: rgba(16, 32, 51, 0.04);
   align-self: stretch;
+}
+
+.landing-panel {
+  display: grid;
+  align-content: end;
 }
 
 .status-message {
@@ -141,6 +181,10 @@ button {
   grid-template-columns: 1fr 1fr;
   gap: 22px;
   margin-top: 24px;
+}
+
+.content-grid.single-column {
+  grid-template-columns: 1fr;
 }
 
 .panel {
@@ -223,6 +267,7 @@ button {
 
 .primary-btn {
   min-height: 50px;
+  padding: 0 20px;
   background: linear-gradient(135deg, var(--accent), #f59e0b);
   color: #fff;
   font-weight: 700;
@@ -233,6 +278,15 @@ button {
   padding: 0 14px;
   background: rgba(16, 32, 51, 0.06);
   color: var(--ink);
+}
+
+.form-secondary-btn,
+.form-grid .primary-btn {
+  width: 100%;
+}
+
+.form-secondary-btn {
+  min-height: 48px;
 }
 
 .ghost-btn.danger {
@@ -252,10 +306,23 @@ button {
   transform: none;
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.journey-list {
+  display: grid;
+  gap: 14px;
+}
+
+.journey-list article,
+.empty-state,
+.profile-stats div {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(16, 32, 51, 0.04);
+}
+
+.journey-list strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink);
 }
 
 .profile-card {
@@ -283,7 +350,8 @@ button {
 
 .profile-info p,
 .empty-state p,
-.status-meta {
+.status-meta,
+.journey-list p {
   margin: 0;
 }
 
@@ -293,12 +361,6 @@ button {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin: 4px 0 0;
-}
-
-.profile-stats div {
-  padding: 14px;
-  border-radius: 18px;
-  background: rgba(16, 32, 51, 0.04);
 }
 
 .profile-stats dt {
@@ -317,32 +379,34 @@ button {
   font-weight: 700;
 }
 
-.empty-state {
-  padding: 22px;
-  border-radius: 20px;
-  background: rgba(16, 32, 51, 0.04);
-}
-
 @media (max-width: 920px) {
   .user-shell {
     width: min(100vw - 20px, 100%);
     padding-top: 20px;
   }
 
+  .landing-card,
   .hero-card,
   .content-grid {
     grid-template-columns: 1fr;
+  }
+
+  .landing-card,
+  .hero-card,
+  .panel {
+    padding: 20px;
   }
 
   .panel-head {
     flex-direction: column;
   }
 
-  .profile-card {
+  .profile-card,
+  .profile-stats {
     grid-template-columns: 1fr;
   }
 
-  .profile-stats {
-    grid-template-columns: 1fr;
+  .landing-copy h1 {
+    font-size: clamp(2.4rem, 16vw, 4rem);
   }
 }
