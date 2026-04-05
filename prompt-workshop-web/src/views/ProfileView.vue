@@ -11,10 +11,6 @@ function openHome() {
   void router.push('/')
 }
 
-function openEditor(articleId?: number) {
-  void router.push(articleId ? `/editor/${articleId}` : '/editor')
-}
-
 function openArticle(articleId: number) {
   void router.push(`/articles/${articleId}`)
 }
@@ -36,19 +32,19 @@ onMounted(() => {
     <section class="hero-card">
       <div class="hero-copy">
         <p class="eyebrow">User Center</p>
-        <h1>{{ userDisplayName }}，开始管理你的内容</h1>
-        <p class="hero-text">这里不再只是资料展示页，现在已经接上“我的文章”和“继续创作”能力。</p>
+        <h1>{{ userDisplayName }}，查看你的账号与内容记录</h1>
+        <p class="hero-text">前台个人用户不再提供发文入口，文章发布与编辑统一在后台文章管理中完成。</p>
 
         <div class="hero-pills">
           <span>当前路由：/profile</span>
-          <span>我的文章：{{ contentState.myArticles.length }} 篇</span>
+          <span>历史文章：{{ contentState.myArticles.length }} 篇</span>
         </div>
       </div>
 
       <div class="status-panel">
         <p class="status-label">当前提示</p>
         <p class="status-message" :data-type="authState.feedbackType">{{ authState.feedbackMessage }}</p>
-        <p class="status-meta">发布草稿和正式发布都可以在编辑页完成。</p>
+        <p class="status-meta">如需新增、编辑或发布文章，请前往后台管理台操作。</p>
       </div>
     </section>
 
@@ -65,7 +61,6 @@ onMounted(() => {
             <button class="ghost-btn" type="button" :disabled="authState.profileLoading" @click="loadProfile()">
               {{ authState.profileLoading ? '刷新中...' : '刷新资料' }}
             </button>
-            <button class="primary-btn compact-btn" type="button" @click="openEditor()">新建文章</button>
             <button class="ghost-btn danger" type="button" @click="logout">退出登录</button>
           </div>
         </div>
@@ -99,7 +94,7 @@ onMounted(() => {
       <section class="panel">
         <div class="panel-head">
           <div>
-            <p class="panel-kicker">创作入口</p>
+            <p class="panel-kicker">内容记录</p>
             <h2>我的文章</h2>
           </div>
 
@@ -119,13 +114,12 @@ onMounted(() => {
                 {{ article.status === 1 ? '已发布' : article.status === 0 ? '草稿' : '下架' }}
               </span>
               <button class="ghost-btn small-btn" type="button" @click="openArticle(article.id)">查看</button>
-              <button class="primary-btn small-btn" type="button" @click="openEditor(article.id)">编辑</button>
             </div>
           </article>
         </div>
         <div v-else class="empty-state">
-          <p>你还没有创建文章。</p>
-          <p>点击上面的“新建文章”，可以直接开始写第一篇内容。</p>
+          <p>当前没有你的文章记录。</p>
+          <p>前台个人用户不能发布文章，新增内容请在后台文章管理中完成。</p>
         </div>
       </section>
     </main>

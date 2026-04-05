@@ -88,7 +88,7 @@ export interface ArticleMutationInput {
 }
 
 export interface AdminArticleMutationInput extends ArticleMutationInput {
-  userId: number;
+  userId?: number;
 }
 
 function normalizeTagIds(tagIds: number[] = []) {
@@ -131,6 +131,24 @@ async function ensureUserExists(userId: number) {
   if (!user) {
     throw new Error('文章作者不存在');
   }
+}
+
+async function resolveDefaultAdminArticleUserId(executor?: Parameters<typeof queryOne>[2]) {
+  const user = await queryOne<{ id: number }>(
+    `SELECT id
+    FROM users
+    WHERE status = 1
+    ORDER BY id ASC
+    LIMIT 1`,
+    [],
+    executor,
+  );
+
+  if (!user) {
+    throw new Error('当前没有可用的前台用户，请先创建并启用用户账号');
+  }
+
+  return user.id;
 }
 
 async function ensureTagsExist(tagIds: number[]) {
@@ -732,8 +750,9 @@ export async function updateArticle(userId: number, articleId: number, input: Ar
 export async function createAdminArticle(input: AdminArticleMutationInput) {
   const tagIds = normalizeTagIds(input.tagIds);
   const status = ensureArticleStatus(input.status, 0);
+  const resolvedUserId = input.userId ?? await resolveDefaultAdminArticleUserId();
 
-  await ensureUserExists(input.userId);
+  await ensureUserExists(resolvedUserId);
   await ensureCategoryExists(input.categoryId);
   await ensureTagsExist(tagIds);
 
@@ -743,7 +762,7 @@ export async function createAdminArticle(input: AdminArticleMutationInput) {
         (user_id, category_id, title, summary, content, status, published_at, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
-        input.userId,
+        resolvedUserId,
         input.categoryId ?? null,
         input.title,
         input.summary ?? null,
@@ -762,9 +781,10 @@ export async function createAdminArticle(input: AdminArticleMutationInput) {
 }
 
 export async function updateAdminArticle(articleId: number, input: AdminArticleMutationInput) {
-  const existing = await queryOne<{ id: number; publishedAt: Date | null }>(
+  const existing = await queryOne<{ id: number; userId: number; publishedAt: Date | null }>(
     `SELECT
       id,
+      user_id AS userId,
       published_at AS publishedAt
     FROM articles
     WHERE id = ?
@@ -778,8 +798,9 @@ export async function updateAdminArticle(articleId: number, input: AdminArticleM
 
   const tagIds = normalizeTagIds(input.tagIds);
   const status = ensureArticleStatus(input.status, 0);
+  const resolvedUserId = input.userId ?? existing.userId;
 
-  await ensureUserExists(input.userId);
+  await ensureUserExists(resolvedUserId);
   await ensureCategoryExists(input.categoryId);
   await ensureTagsExist(tagIds);
 
@@ -789,7 +810,7 @@ export async function updateAdminArticle(articleId: number, input: AdminArticleM
       SET user_id = ?, category_id = ?, title = ?, summary = ?, content = ?, status = ?, published_at = ?, updated_at = NOW()
       WHERE id = ?`,
       [
-        input.userId,
+        resolvedUserId,
         input.categoryId ?? null,
         input.title,
         input.summary ?? null,

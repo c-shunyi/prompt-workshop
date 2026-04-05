@@ -3,7 +3,6 @@ import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownContent from '../components/MarkdownContent.vue'
 import WebTopNav from '../components/WebTopNav.vue'
-import { authState } from '../modules/auth'
 import { contentState, loadArticleDetail, toggleFavorite, toggleLike } from '../modules/content'
 
 const route = useRoute()
@@ -11,7 +10,6 @@ const router = useRouter()
 
 const articleId = computed(() => Number(route.params.id))
 const article = computed(() => contentState.articleDetail)
-const isOwner = computed(() => article.value && authState.currentUser?.id === article.value.userId)
 
 async function loadCurrentArticle() {
   if (Number.isInteger(articleId.value) && articleId.value > 0) {
@@ -21,12 +19,6 @@ async function loadCurrentArticle() {
 
 function openHome() {
   void router.push('/')
-}
-
-function openEditor() {
-  if (article.value) {
-    void router.push(`/editor/${article.value.id}`)
-  }
 }
 
 async function likeArticle() {
@@ -86,7 +78,6 @@ onMounted(() => {
           <p class="panel-kicker">文章操作</p>
           <div class="article-detail__actions">
             <button class="ghost-btn" type="button" @click="openHome">返回首页</button>
-            <button v-if="isOwner" class="primary-btn compact-btn" type="button" @click="openEditor">编辑文章</button>
             <button class="ghost-btn" type="button" @click="likeArticle">
               {{ article.liked ? '取消点赞' : '点赞文章' }} · {{ article.likeCount }}
             </button>

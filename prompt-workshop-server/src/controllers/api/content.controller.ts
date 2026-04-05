@@ -3,14 +3,8 @@ import { AuthRequest } from '../../types';
 import * as contentService from '../../services/content.service';
 import { fail, success } from '../../utils/response';
 
-function parseTagIds(value: unknown) {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value
-    .map((item) => Number(item))
-    .filter((item) => Number.isInteger(item) && item > 0);
+function rejectPersonalPublishing(res: Response) {
+  fail(res, '个人用户不能发布或编辑文章，请使用后台文章管理功能', 403, 403);
 }
 
 export async function getCategories(_req: Request, res: Response, next: NextFunction) {
@@ -92,26 +86,13 @@ export async function getMyArticles(req: AuthRequest, res: Response, next: NextF
 export async function getEditableArticle(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const userId = req.user?.userId;
-    const articleId = Number(req.params.id);
 
     if (!userId) {
       fail(res, '未获取到用户信息，请先登录', 401, 401);
       return;
     }
 
-    if (!Number.isInteger(articleId) || articleId <= 0) {
-      fail(res, '无效的文章 ID', 400);
-      return;
-    }
-
-    const article = await contentService.getEditableArticle(userId, articleId);
-
-    if (!article) {
-      fail(res, '文章不存在或无权编辑', 404);
-      return;
-    }
-
-    success(res, article);
+    rejectPersonalPublishing(res);
   } catch (error) {
     next(error);
   }
@@ -120,28 +101,13 @@ export async function getEditableArticle(req: AuthRequest, res: Response, next: 
 export async function createArticle(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const userId = req.user?.userId;
-    const { title, summary, content, categoryId, status } = req.body;
 
     if (!userId) {
       fail(res, '未获取到用户信息，请先登录', 401, 401);
       return;
     }
 
-    if (!title || !content) {
-      fail(res, '标题和正文不能为空', 400);
-      return;
-    }
-
-    const article = await contentService.createArticle(userId, {
-      title,
-      summary,
-      content,
-      categoryId: categoryId ? Number(categoryId) : null,
-      tagIds: parseTagIds(req.body.tagIds),
-      status: status !== undefined ? Number(status) : undefined,
-    });
-
-    success(res, article, '文章创建成功');
+    rejectPersonalPublishing(res);
   } catch (error) {
     next(error);
   }
@@ -150,34 +116,13 @@ export async function createArticle(req: AuthRequest, res: Response, next: NextF
 export async function updateArticle(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const userId = req.user?.userId;
-    const articleId = Number(req.params.id);
-    const { title, summary, content, categoryId, status } = req.body;
 
     if (!userId) {
       fail(res, '未获取到用户信息，请先登录', 401, 401);
       return;
     }
 
-    if (!Number.isInteger(articleId) || articleId <= 0) {
-      fail(res, '无效的文章 ID', 400);
-      return;
-    }
-
-    if (!title || !content) {
-      fail(res, '标题和正文不能为空', 400);
-      return;
-    }
-
-    const article = await contentService.updateArticle(userId, articleId, {
-      title,
-      summary,
-      content,
-      categoryId: categoryId ? Number(categoryId) : null,
-      tagIds: parseTagIds(req.body.tagIds),
-      status: status !== undefined ? Number(status) : undefined,
-    });
-
-    success(res, article, '文章更新成功');
+    rejectPersonalPublishing(res);
   } catch (error) {
     next(error);
   }

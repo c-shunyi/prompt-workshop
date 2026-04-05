@@ -25,10 +25,6 @@ function goRegister() {
   void router.push('/register')
 }
 
-function goEditor() {
-  void router.push('/editor')
-}
-
 function goProfile() {
   void router.push('/profile')
 }
@@ -60,14 +56,6 @@ function logout() {
       </button>
       <button
         class="site-nav__link"
-        :class="{ 'site-nav__link--active': props.active === 'write' }"
-        type="button"
-        @click="goEditor"
-      >
-        写文章
-      </button>
-      <button
-        class="site-nav__link"
         :class="{ 'site-nav__link--active': props.active === 'profile' }"
         type="button"
         @click="goProfile"
@@ -84,7 +72,6 @@ function logout() {
       <template v-if="authState.currentUser">
         <span class="site-nav__welcome">{{ userDisplayName }}</span>
         <button class="ghost-btn site-nav__action" type="button" @click="goProfile">个人中心</button>
-        <button class="primary-btn site-nav__action" type="button" @click="goEditor">发布文章</button>
         <button class="ghost-btn site-nav__action" type="button" @click="logout">退出</button>
       </template>
       <template v-else>

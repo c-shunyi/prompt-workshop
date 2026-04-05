@@ -172,13 +172,13 @@ export async function createArticle(req: Request, res: Response, next: NextFunct
   try {
     const { userId, title, summary, content, categoryId, status } = req.body;
 
-    if (!userId || !title || !content) {
-      fail(res, '作者、标题和正文不能为空', 400);
+    if (!title || !content) {
+      fail(res, '标题和正文不能为空', 400);
       return;
     }
 
     const article = await contentService.createAdminArticle({
-      userId: Number(userId),
+      userId: userId ? Number(userId) : undefined,
       title,
       summary,
       content,
@@ -203,13 +203,13 @@ export async function updateArticle(req: Request, res: Response, next: NextFunct
       return;
     }
 
-    if (!userId || !title || !content) {
-      fail(res, '作者、标题和正文不能为空', 400);
+    if (!title || !content) {
+      fail(res, '标题和正文不能为空', 400);
       return;
     }
 
     const article = await contentService.updateAdminArticle(articleId, {
-      userId: Number(userId),
+      userId: userId ? Number(userId) : undefined,
       title,
       summary,
       content,

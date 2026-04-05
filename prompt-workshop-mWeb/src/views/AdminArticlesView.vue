@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import MarkdownIt from 'markdown-it'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { EditPen, MoreFilled, Plus, Search } from '@element-plus/icons-vue'
+import RichTextEditor from '../components/RichTextEditor.vue'
 import {
   adminState,
   deleteArticleByAdmin,
@@ -11,6 +13,13 @@ import {
   updateArticleStatusByAdmin,
   type AdminArticleItem,
 } from '../modules/admin'
+
+const markdown = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true,
+  typographer: true,
+})
 
 const dialogVisible = ref(false)
 const isEditMode = ref(false)
@@ -32,6 +41,25 @@ const articleForm = reactive({
 })
 
 const availableUsers = computed(() => adminState.userList.filter((item) => item.status === 1))
+const defaultAuthor = computed(() => availableUsers.value[0] ?? null)
+const defaultAuthorLabel = computed(() => {
+  if (!defaultAuthor.value) {
+    return ''
+  }
+
+  return defaultAuthor.value.nickname || defaultAuthor.value.username
+})
+const authorFieldHint = computed(() => {
+  if (isEditMode.value) {
+    return '作者可选，留空时会保留当前作者。'
+  }
+
+  if (defaultAuthorLabel.value) {
+    return `作者可选，留空时会自动使用 ${defaultAuthorLabel.value}。`
+  }
+
+  return '作者可选，留空时会自动分配默认作者。'
+})
 const articleStats = computed(() => ({
   total: adminState.articles.length,
   draft: adminState.articles.filter((item) => item.status === 0).length,
@@ -110,8 +138,34 @@ function getAuthorLabel(article: AdminArticleItem) {
   return article.authorNickname || article.authorUsername
 }
 
+function isRichTextHtml(content: string) {
+  const trimmed = content.trim()
+  return /^(?:<p\b|<div\b|<h[1-6]\b|<blockquote\b|<ul\b|<ol\b|<table\b|<pre\b)/i.test(trimmed)
+}
+
+function normalizeContentForRichText(content?: string | null) {
+  const raw = (content || '').trim()
+
+  if (!raw) {
+    return ''
+  }
+
+  return isRichTextHtml(raw) ? raw : markdown.render(raw)
+}
+
+function hasMeaningfulRichTextContent(content: string) {
+  const plainText = content
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, '')
+
+  return plainText.length > 0
+}
+
 function resetForm() {
-  articleForm.userId = availableUsers.value[0]?.id ?? 0
+  articleForm.userId = 0
   articleForm.title = ''
   articleForm.summary = ''
   articleForm.content = ''
@@ -154,7 +208,7 @@ async function openEditDialog(article: AdminArticleItem) {
   articleForm.userId = detail.userId
   articleForm.title = detail.title
   articleForm.summary = detail.summary || ''
-  articleForm.content = detail.content || ''
+  articleForm.content = normalizeContentForRichText(detail.content)
   articleForm.categoryId = detail.categoryId || 0
   articleForm.tagIds = detail.tags.map((tag) => tag.id)
   articleForm.status = detail.status
@@ -169,8 +223,13 @@ function closeDialog() {
 }
 
 async function submitArticleWithStatus(status: number) {
-  if (!articleForm.userId || !articleForm.title || !articleForm.content) {
-    ElMessage.warning('请选择作者，并填写标题和正文')
+  if (!articleForm.title || !hasMeaningfulRichTextContent(articleForm.content)) {
+    ElMessage.warning('请填写标题和正文')
+    return
+  }
+
+  if (!editingArticleId.value && !defaultAuthor.value && !articleForm.userId) {
+    ElMessage.warning('当前没有可用的默认作者，请先创建并启用前台用户账号')
     return
   }
 
@@ -178,7 +237,7 @@ async function submitArticleWithStatus(status: number) {
 
   const success = await saveArticleByAdmin({
     articleId: editingArticleId.value || undefined,
-    userId: articleForm.userId,
+    userId: articleForm.userId || undefined,
     title: articleForm.title.trim(),
     summary: articleForm.summary.trim(),
     content: articleForm.content,
@@ -386,14 +445,20 @@ async function handleArticleCommand(article: AdminArticleItem, command: string |
     <el-dialog
       v-model="dialogVisible"
       :title="isEditMode ? '编辑文章' : '创建文章'"
-      width="860px"
+      width="980px"
       @close="closeDialog"
     >
       <el-form :model="articleForm" label-position="top">
         <el-row :gutter="12">
           <el-col :span="12">
-            <el-form-item label="文章作者">
-              <el-select v-model="articleForm.userId" class="admin-panel__full-width" filterable>
+            <el-form-item label="文章作者（可选）">
+              <el-select
+                v-model="articleForm.userId"
+                class="admin-panel__full-width"
+                filterable
+                clearable
+                placeholder="不选择则自动分配作者"
+              >
                 <el-option
                   v-for="user in availableUsers"
                   :key="user.id"
@@ -401,6 +466,7 @@ async function handleArticleCommand(article: AdminArticleItem, command: string |
                   :value="user.id"
                 />
               </el-select>
+              <p class="admin-article-form__hint">{{ authorFieldHint }}</p>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -451,12 +517,14 @@ async function handleArticleCommand(article: AdminArticleItem, command: string |
         </el-row>
 
         <el-form-item label="文章正文">
-          <el-input
+          <RichTextEditor
             v-model="articleForm.content"
-            type="textarea"
-            :rows="16"
-            placeholder="输入文章正文，支持 Markdown 内容"
+            placeholder="输入文章正文，支持标题、列表、引用、代码块、表格等富文本内容"
+            :min-height="420"
           />
+          <p class="admin-article-form__hint">
+            旧的 Markdown 正文会在打开编辑时自动转换为富文本 HTML。
+          </p>
         </el-form-item>
       </el-form>
 
@@ -563,6 +631,13 @@ async function handleArticleCommand(article: AdminArticleItem, command: string |
 
 .admin-article-actions :deep(.el-button) {
   width: 100%;
+}
+
+.admin-article-form__hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 @media (max-width: 960px) {

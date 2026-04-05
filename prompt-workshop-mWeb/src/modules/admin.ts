@@ -552,7 +552,7 @@ export async function loadAdminArticleDetail(articleId: number) {
 
 export async function saveArticleByAdmin(input: {
   articleId?: number
-  userId: number
+  userId?: number
   title: string
   summary: string
   content: string
