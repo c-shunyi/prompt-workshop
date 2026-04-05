@@ -2,14 +2,8 @@
 import { computed, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Plus, RefreshRight } from '@element-plus/icons-vue'
 import {
-  Plus,
-  RefreshRight,
-  SwitchButton,
-  User,
-} from '@element-plus/icons-vue'
-import {
-  API_BASE,
   adminState,
   createAdminAccount,
   loadDashboard,
@@ -27,7 +21,46 @@ const createAdminForm = reactive({
   role: 'admin',
 })
 
-const alertType = computed(() => adminState.feedbackType)
+const today = new Intl.DateTimeFormat('zh-CN', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  weekday: 'long',
+}).format(new Date())
+
+const sidebarNavItems = [
+  { href: '#overview', label: '控制台' },
+  { href: '#create-admin', label: '管理员创建' },
+  { href: '#admin-list', label: '管理员列表' },
+  { href: '#user-list', label: '用户管理' },
+]
+
+const metrics = computed(() => [
+  {
+    eyebrow: '管理员数量',
+    value: String(adminState.adminList.length),
+    label: '已接入后台账号',
+    trend: '查看列表',
+  },
+  {
+    eyebrow: '前台用户数量',
+    value: String(adminState.userList.length),
+    label: '当前注册用户',
+    trend: '管理状态',
+  },
+  {
+    eyebrow: '当前身份',
+    value: roleLabel.value,
+    label: adminState.currentAdmin?.nickname || adminState.currentAdmin?.username || '未登录',
+    trend: '会话中',
+  },
+  {
+    eyebrow: '数据状态',
+    value: adminState.dashboardLoading ? '同步中' : '已连接',
+    label: '后台接口状态',
+    trend: '刷新数据',
+  },
+])
 
 function formatDate(value?: string | null) {
   if (!value) {
@@ -101,146 +134,158 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="admin-shell">
-    <section class="hero-card">
-      <div class="hero-copy">
-        <el-space direction="vertical" :size="14" fill>
-          <el-tag effect="dark" round type="success" class="hero-tag">Prompt Workshop Admin</el-tag>
-          <h1>Element Plus 管理台</h1>
-          <p class="hero-text">
-            管理台已经切到独立的 <code>/dashboard</code> 页面，未登录访问时会自动跳转到 <code>/login</code>。
-          </p>
-          <el-space wrap>
-            <el-tag round>{{ API_BASE }}/admin</el-tag>
-            <el-tag round type="info">{{ adminState.currentAdmin ? roleLabel : '未登录' }}</el-tag>
-            <el-tag round type="warning">当前路由：/dashboard</el-tag>
-          </el-space>
-        </el-space>
+  <div class="admin-layout">
+    <aside class="admin-layout__sidebar">
+      <div class="admin-layout__sidebar-top">
+        <p class="admin-layout__brand-mark">Prompt Workshop</p>
+        <h1 class="admin-layout__brand-title">内容工坊后台</h1>
+        <p class="admin-layout__brand-copy">
+          风格参考 travel/manage，采用深色侧栏和浅色工作区，便于后续继续扩展更多后台模块。
+        </p>
       </div>
 
-      <el-card shadow="never" class="hero-side">
-        <template #header>
-          <div class="panel-title">当前会话</div>
-        </template>
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="管理员">
-            {{ adminState.currentAdmin ? adminState.currentAdmin.nickname || adminState.currentAdmin.username : '未登录' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="角色">
-            {{ adminState.currentAdmin?.role || '-' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="初始化命令">
-            <code>pnpm admin:init</code>
-          </el-descriptions-item>
-        </el-descriptions>
-      </el-card>
-    </section>
+      <nav class="admin-layout__nav">
+        <a
+          v-for="item in sidebarNavItems"
+          :key="item.href"
+          :href="item.href"
+          class="admin-layout__nav-link"
+        >
+          {{ item.label }}
+        </a>
+      </nav>
 
-    <el-alert
-      :title="adminState.feedbackMessage"
-      :type="alertType"
-      show-icon
-      class="status-alert"
-      :closable="false"
-    />
+      <div class="admin-layout__sidebar-card">
+        <p>{{ adminState.currentAdmin?.nickname || adminState.currentAdmin?.username || '管理员' }}</p>
+        <span class="admin-layout__role">{{ roleLabel }}</span>
+        <strong>{{ adminState.currentAdmin?.username || '未登录' }}</strong>
+        <button class="admin-layout__logout" @click="logout">退出登录</button>
+      </div>
+    </aside>
 
-    <el-row :gutter="18" class="dashboard-grid">
-      <el-col :xs="24" :lg="12">
-        <el-card class="panel-card" shadow="hover">
-          <template #header>
-            <div class="panel-header">
+    <main class="admin-layout__main">
+      <header class="admin-layout__header">
+        <div>
+          <p class="admin-layout__eyebrow">Operations Desk</p>
+          <h2>管理控制台</h2>
+        </div>
+
+        <div class="admin-layout__header-meta">
+          <span>{{ today }}</span>
+        </div>
+      </header>
+
+      <section class="admin-layout__content">
+        <el-alert
+          :title="adminState.feedbackMessage"
+          :type="adminState.feedbackType"
+          show-icon
+          class="admin-layout__alert"
+          :closable="false"
+        />
+
+        <section id="overview" class="admin-stats">
+          <article v-for="metric in metrics" :key="metric.eyebrow" class="admin-stat-card">
+            <div class="admin-stat-card__eyebrow">{{ metric.eyebrow }}</div>
+            <div class="admin-stat-card__value">{{ metric.value }}</div>
+            <div class="admin-stat-card__footer">
+              <span>{{ metric.label }}</span>
+              <strong>{{ metric.trend }}</strong>
+            </div>
+          </article>
+        </section>
+
+        <section class="admin-panels">
+          <article class="admin-panel">
+            <div class="admin-panel__head">
               <div>
-                <div class="panel-kicker">管理概览</div>
-                <div class="panel-title">当前后台数据</div>
+                <p class="admin-panel__eyebrow">会话概览</p>
+                <h3 class="admin-panel__title">当前后台状态</h3>
               </div>
-              <el-button type="danger" plain :icon="SwitchButton" @click="logout">
-                退出
+
+              <el-button
+                type="primary"
+                plain
+                :icon="RefreshRight"
+                :loading="adminState.dashboardLoading"
+                @click="refreshDashboard"
+              >
+                刷新
               </el-button>
             </div>
-          </template>
 
-          <el-row :gutter="12" class="stat-row">
-            <el-col :span="12">
-              <el-card shadow="never" class="stat-card">
-                <el-statistic title="管理员数量" :value="adminState.adminList.length" />
-              </el-card>
-            </el-col>
-            <el-col :span="12">
-              <el-card shadow="never" class="stat-card">
-                <el-statistic title="前台用户数量" :value="adminState.userList.length" />
-              </el-card>
-            </el-col>
-          </el-row>
-
-          <el-space wrap class="dashboard-actions">
-            <el-button type="primary" plain :icon="RefreshRight" :loading="adminState.dashboardLoading" @click="refreshDashboard">
-              刷新后台数据
-            </el-button>
-            <el-tag round type="success">
-              {{ adminState.currentAdmin ? `${adminState.currentAdmin.nickname || adminState.currentAdmin.username} · ${roleLabel}` : '未登录' }}
-            </el-tag>
-          </el-space>
-        </el-card>
-      </el-col>
-
-      <el-col :xs="24" :lg="12">
-        <el-card class="panel-card" shadow="hover">
-          <template #header>
-            <div class="panel-header">
-              <div>
-                <div class="panel-kicker">管理员管理</div>
-                <div class="panel-title">创建管理员</div>
+            <div class="admin-summary-list">
+              <div class="admin-summary-item">
+                <span>当前路由</span>
+                <strong>/dashboard</strong>
+              </div>
+              <div class="admin-summary-item">
+                <span>管理员</span>
+                <strong>{{ adminState.currentAdmin?.nickname || adminState.currentAdmin?.username || '-' }}</strong>
+              </div>
+              <div class="admin-summary-item">
+                <span>角色</span>
+                <strong>{{ roleLabel }}</strong>
+              </div>
+              <div class="admin-summary-item">
+                <span>初始化命令</span>
+                <strong>pnpm admin:init</strong>
               </div>
             </div>
-          </template>
+          </article>
 
-          <el-form :model="createAdminForm" label-position="top" class="admin-form" @submit.prevent="submitCreateAdmin">
-            <el-row :gutter="12">
-              <el-col :span="12">
-                <el-form-item label="用户名">
-                  <el-input v-model.trim="createAdminForm.username" placeholder="新管理员用户名" :prefix-icon="User" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="昵称">
-                  <el-input v-model.trim="createAdminForm.nickname" placeholder="例如 内容运营" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-
-            <el-row :gutter="12">
-              <el-col :span="12">
-                <el-form-item label="密码">
-                  <el-input v-model="createAdminForm.password" type="password" show-password placeholder="设置登录密码" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="角色">
-                  <el-select v-model="createAdminForm.role" class="full-width">
-                    <el-option label="普通管理员" value="admin" />
-                    <el-option label="超级管理员" value="super_admin" />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-
-            <el-button type="success" class="submit-btn" :icon="Plus" :loading="adminState.loading" @click="submitCreateAdmin">
-              创建管理员
-            </el-button>
-          </el-form>
-        </el-card>
-      </el-col>
-
-      <el-col :span="24">
-        <el-card class="panel-card" shadow="hover">
-          <template #header>
-            <div class="panel-header">
+          <article id="create-admin" class="admin-panel">
+            <div class="admin-panel__head">
               <div>
-                <div class="panel-kicker">管理员列表</div>
-                <div class="panel-title">已有后台账号</div>
+                <p class="admin-panel__eyebrow">管理员管理</p>
+                <h3 class="admin-panel__title">创建管理员</h3>
               </div>
             </div>
-          </template>
+
+            <el-form :model="createAdminForm" label-position="top" @submit.prevent="submitCreateAdmin">
+              <el-row :gutter="12">
+                <el-col :span="12">
+                  <el-form-item label="用户名">
+                    <el-input v-model.trim="createAdminForm.username" placeholder="新管理员用户名" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="昵称">
+                    <el-input v-model.trim="createAdminForm.nickname" placeholder="例如 内容运营" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+
+              <el-row :gutter="12">
+                <el-col :span="12">
+                  <el-form-item label="密码">
+                    <el-input v-model="createAdminForm.password" type="password" show-password placeholder="设置登录密码" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="角色">
+                    <el-select v-model="createAdminForm.role" class="admin-panel__full-width">
+                      <el-option label="普通管理员" value="admin" />
+                      <el-option label="超级管理员" value="super_admin" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+
+              <el-button type="primary" class="admin-panel__submit" :icon="Plus" :loading="adminState.loading" @click="submitCreateAdmin">
+                创建管理员
+              </el-button>
+            </el-form>
+          </article>
+        </section>
+
+        <article id="admin-list" class="admin-panel admin-panel--table">
+          <div class="admin-panel__head">
+            <div>
+              <p class="admin-panel__eyebrow">管理员列表</p>
+              <h3 class="admin-panel__title">已有后台账号</h3>
+            </div>
+          </div>
 
           <el-table :data="adminState.adminList" stripe empty-text="登录后即可查看管理员列表">
             <el-table-column prop="username" label="用户名" min-width="140" />
@@ -263,19 +308,15 @@ onMounted(() => {
               </template>
             </el-table-column>
           </el-table>
-        </el-card>
-      </el-col>
+        </article>
 
-      <el-col :span="24">
-        <el-card class="panel-card" shadow="hover">
-          <template #header>
-            <div class="panel-header">
-              <div>
-                <div class="panel-kicker">用户管理</div>
-                <div class="panel-title">前台用户列表</div>
-              </div>
+        <article id="user-list" class="admin-panel admin-panel--table">
+          <div class="admin-panel__head">
+            <div>
+              <p class="admin-panel__eyebrow">用户管理</p>
+              <h3 class="admin-panel__title">前台用户列表</h3>
             </div>
-          </template>
+          </div>
 
           <el-table :data="adminState.userList" stripe empty-text="登录后即可查看前台用户列表">
             <el-table-column prop="username" label="用户名" min-width="140" />
@@ -322,8 +363,8 @@ onMounted(() => {
               </template>
             </el-table-column>
           </el-table>
-        </el-card>
-      </el-col>
-    </el-row>
+        </article>
+      </section>
+    </main>
   </div>
 </template>
