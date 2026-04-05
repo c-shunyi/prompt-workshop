@@ -1,6 +1,20 @@
 import bcrypt from 'bcryptjs';
-import prisma from '../prisma/client';
+import { execute, queryOne, queryRows } from '../db/client';
 import { signToken } from '../utils/jwt';
+
+interface UserRecord {
+  id: number;
+  username: string;
+  email: string;
+  passwordHash: string;
+  nickname: string | null;
+  avatar: string | null;
+  bio: string | null;
+  status: number;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 /**
  * 前台用户服务层
@@ -18,44 +32,61 @@ export async function registerUser(data: {
   password: string;
   nickname?: string;
 }) {
-  const existingUser = await prisma.user.findFirst({
-    where: {
-      OR: [{ username: data.username }, { email: data.email }],
-    },
-    select: {
-      username: true,
-      email: true,
-    },
-  });
+  const existingByUsername = await queryOne<{ id: number }>(
+    'SELECT id FROM users WHERE username = ? LIMIT 1',
+    [data.username],
+  );
 
-  if (existingUser?.username === data.username) {
+  const existingByEmail = await queryOne<{ id: number }>(
+    'SELECT id FROM users WHERE email = ? LIMIT 1',
+    [data.email],
+  );
+
+  if (existingByUsername) {
     throw new Error('用户名已存在');
   }
 
-  if (existingUser?.email === data.email) {
+  if (existingByEmail) {
     throw new Error('邮箱已存在');
   }
 
   const passwordHash = await bcrypt.hash(data.password, 10);
 
-  const user = await prisma.user.create({
-    data: {
-      username: data.username,
-      email: data.email,
-      passwordHash,
-      nickname: data.nickname,
-    },
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      nickname: true,
-      avatar: true,
-      bio: true,
-      status: true,
-      createdAt: true,
-    },
-  });
+  const result = await execute(
+    `INSERT INTO users
+      (username, email, password_hash, nickname, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 1, NOW(), NOW())`,
+    [data.username, data.email, passwordHash, data.nickname ?? null],
+  );
+
+  const user = await queryOne<{
+    id: number;
+    username: string;
+    email: string;
+    nickname: string | null;
+    avatar: string | null;
+    bio: string | null;
+    status: number;
+    createdAt: Date;
+  }>(
+    `SELECT
+      id,
+      username,
+      email,
+      nickname,
+      avatar,
+      bio,
+      status,
+      created_at AS createdAt
+    FROM users
+    WHERE id = ?
+    LIMIT 1`,
+    [Number((result as { insertId: number }).insertId)],
+  );
+
+  if (!user) {
+    throw new Error('用户创建失败');
+  }
 
   const token = signToken({ userId: user.id });
 
@@ -72,11 +103,24 @@ export async function registerUser(data: {
  * @returns 登录成功返回 token 和用户信息，失败返回 null
  */
 export async function loginUser(account: string, password: string) {
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [{ username: account }, { email: account }],
-    },
-  });
+  const user = await queryOne<UserRecord>(
+    `SELECT
+      id,
+      username,
+      email,
+      password_hash AS passwordHash,
+      nickname,
+      avatar,
+      bio,
+      status,
+      last_login_at AS lastLoginAt,
+      created_at AS createdAt,
+      updated_at AS updatedAt
+    FROM users
+    WHERE username = ? OR email = ?
+    LIMIT 1`,
+    [account, account],
+  );
 
   if (!user) {
     return null;
@@ -91,10 +135,7 @@ export async function loginUser(account: string, password: string) {
     return null;
   }
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date() },
-  });
+  await execute('UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = ?', [user.id]);
 
   const token = signToken({ userId: user.id });
 
@@ -118,21 +159,23 @@ export async function loginUser(account: string, password: string) {
  * @returns 用户信息，若不存在则返回 null
  */
 export async function getCurrentUserProfile(userId: number) {
-  return prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      nickname: true,
-      avatar: true,
-      bio: true,
-      status: true,
-      lastLoginAt: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
+  return queryOne<Omit<UserRecord, 'passwordHash'>>(
+    `SELECT
+      id,
+      username,
+      email,
+      nickname,
+      avatar,
+      bio,
+      status,
+      last_login_at AS lastLoginAt,
+      created_at AS createdAt,
+      updated_at AS updatedAt
+    FROM users
+    WHERE id = ?
+    LIMIT 1`,
+    [userId],
+  );
 }
 
 /**
@@ -140,20 +183,20 @@ export async function getCurrentUserProfile(userId: number) {
  * @returns 前台用户列表
  */
 export async function getUserList() {
-  return prisma.user.findMany({
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      nickname: true,
-      avatar: true,
-      bio: true,
-      status: true,
-      lastLoginAt: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  return queryRows<Omit<UserRecord, 'passwordHash' | 'updatedAt'>>(
+    `SELECT
+      id,
+      username,
+      email,
+      nickname,
+      avatar,
+      bio,
+      status,
+      last_login_at AS lastLoginAt,
+      created_at AS createdAt
+    FROM users
+    ORDER BY created_at DESC`,
+  );
 }
 
 /**
@@ -163,16 +206,26 @@ export async function getUserList() {
  * @returns 更新后的用户信息
  */
 export async function updateUserStatus(id: number, status: number) {
-  return prisma.user.update({
-    where: { id },
-    data: { status },
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      nickname: true,
-      status: true,
-      updatedAt: true,
-    },
-  });
+  await execute('UPDATE users SET status = ?, updated_at = NOW() WHERE id = ?', [status, id]);
+
+  return queryOne<{
+    id: number;
+    username: string;
+    email: string;
+    nickname: string | null;
+    status: number;
+    updatedAt: Date;
+  }>(
+    `SELECT
+      id,
+      username,
+      email,
+      nickname,
+      status,
+      updated_at AS updatedAt
+    FROM users
+    WHERE id = ?
+    LIMIT 1`,
+    [id],
+  );
 }

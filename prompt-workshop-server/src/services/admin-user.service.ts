@@ -1,7 +1,19 @@
 import bcrypt from 'bcryptjs';
-import prisma from '../prisma/client';
+import { execute, queryOne, queryRows } from '../db/client';
 import { signAdminToken } from '../utils/jwt';
 import { AdminRole } from '../types';
+
+interface AdminUserRecord {
+  id: number;
+  username: string;
+  passwordHash: string;
+  nickname: string | null;
+  role: string;
+  status: number;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 /**
  * 管理员用户服务层
@@ -16,7 +28,22 @@ import { AdminRole } from '../types';
  */
 export async function adminLogin(username: string, password: string) {
   // 查找管理员用户
-  const admin = await prisma.adminUser.findUnique({ where: { username } });
+  const admin = await queryOne<AdminUserRecord>(
+    `SELECT
+      id,
+      username,
+      password_hash AS passwordHash,
+      nickname,
+      role,
+      status,
+      last_login_at AS lastLoginAt,
+      created_at AS createdAt,
+      updated_at AS updatedAt
+    FROM admin_users
+    WHERE username = ?
+    LIMIT 1`,
+    [username],
+  );
 
   if (!admin) {
     return null;
@@ -34,10 +61,7 @@ export async function adminLogin(username: string, password: string) {
   }
 
   // 更新最后登录时间
-  await prisma.adminUser.update({
-    where: { id: admin.id },
-    data: { lastLoginAt: new Date() },
-  });
+  await execute('UPDATE admin_users SET last_login_at = NOW(), updated_at = NOW() WHERE id = ?', [admin.id]);
 
   // 签发 JWT Token
   const token = signAdminToken({
@@ -62,18 +86,18 @@ export async function adminLogin(username: string, password: string) {
  * @returns 管理员列表（不含密码哈希）
  */
 export async function getAdminList() {
-  return prisma.adminUser.findMany({
-    select: {
-      id: true,
-      username: true,
-      nickname: true,
-      role: true,
-      status: true,
-      lastLoginAt: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  return queryRows<Omit<AdminUserRecord, 'passwordHash' | 'updatedAt'>>(
+    `SELECT
+      id,
+      username,
+      nickname,
+      role,
+      status,
+      last_login_at AS lastLoginAt,
+      created_at AS createdAt
+    FROM admin_users
+    ORDER BY created_at DESC`,
+  );
 }
 
 /**
@@ -90,22 +114,33 @@ export async function createAdmin(data: {
   // 密码加密
   const passwordHash = await bcrypt.hash(data.password, 10);
 
-  const admin = await prisma.adminUser.create({
-    data: {
-      username: data.username,
-      passwordHash,
-      nickname: data.nickname,
-      role: data.role || AdminRole.ADMIN,
-    },
-    select: {
-      id: true,
-      username: true,
-      nickname: true,
-      role: true,
-      status: true,
-      createdAt: true,
-    },
-  });
+  const result = await execute(
+    `INSERT INTO admin_users
+      (username, password_hash, nickname, role, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 1, NOW(), NOW())`,
+    [data.username, passwordHash, data.nickname ?? null, data.role || AdminRole.ADMIN],
+  );
+
+  const admin = await queryOne<{
+    id: number;
+    username: string;
+    nickname: string | null;
+    role: string;
+    status: number;
+    createdAt: Date;
+  }>(
+    `SELECT
+      id,
+      username,
+      nickname,
+      role,
+      status,
+      created_at AS createdAt
+    FROM admin_users
+    WHERE id = ?
+    LIMIT 1`,
+    [Number((result as { insertId: number }).insertId)],
+  );
 
   return admin;
 }

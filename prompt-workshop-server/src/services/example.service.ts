@@ -1,5 +1,13 @@
-import prisma from '../prisma/client';
-import { Example } from '../generated/prisma';
+import { execute, queryOne, queryRows } from '../db/client';
+
+export interface Example {
+  id: number;
+  title: string;
+  description: string | null;
+  status: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 /**
  * 示例业务服务层
@@ -15,16 +23,24 @@ import { Example } from '../generated/prisma';
 export async function getExampleList(page = 1, pageSize = 10) {
   const skip = (page - 1) * pageSize;
 
-  const [list, total] = await Promise.all([
-    prisma.example.findMany({
-      skip,
-      take: pageSize,
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.example.count(),
+  const [list, totalRow] = await Promise.all([
+    queryRows<Example>(
+      `SELECT
+        id,
+        title,
+        description,
+        status,
+        created_at AS createdAt,
+        updated_at AS updatedAt
+      FROM examples
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?`,
+      [pageSize, skip],
+    ),
+    queryOne<{ total: number }>('SELECT COUNT(*) AS total FROM examples'),
   ]);
 
-  return { list, total, page, pageSize };
+  return { list, total: totalRow?.total ?? 0, page, pageSize };
 }
 
 /**
@@ -33,7 +49,19 @@ export async function getExampleList(page = 1, pageSize = 10) {
  * @returns 示例记录或 null
  */
 export async function getExampleById(id: number): Promise<Example | null> {
-  return prisma.example.findUnique({ where: { id } });
+  return queryOne<Example>(
+    `SELECT
+      id,
+      title,
+      description,
+      status,
+      created_at AS createdAt,
+      updated_at AS updatedAt
+    FROM examples
+    WHERE id = ?
+    LIMIT 1`,
+    [id],
+  );
 }
 
 /**
@@ -42,7 +70,13 @@ export async function getExampleById(id: number): Promise<Example | null> {
  * @returns 创建后的记录
  */
 export async function createExample(data: { title: string; description?: string }): Promise<Example> {
-  return prisma.example.create({ data });
+  const result = await execute(
+    `INSERT INTO examples (title, description, status, created_at, updated_at)
+     VALUES (?, ?, 1, NOW(), NOW())`,
+    [data.title, data.description ?? null],
+  );
+
+  return getExampleById(Number((result as { insertId: number }).insertId)) as Promise<Example>;
 }
 
 /**
@@ -55,7 +89,30 @@ export async function updateExample(
   id: number,
   data: { title?: string; description?: string; status?: number }
 ): Promise<Example> {
-  return prisma.example.update({ where: { id }, data });
+  const fields: string[] = [];
+  const params: unknown[] = [];
+
+  if (data.title !== undefined) {
+    fields.push('title = ?');
+    params.push(data.title);
+  }
+
+  if (data.description !== undefined) {
+    fields.push('description = ?');
+    params.push(data.description);
+  }
+
+  if (data.status !== undefined) {
+    fields.push('status = ?');
+    params.push(data.status);
+  }
+
+  fields.push('updated_at = NOW()');
+  params.push(id);
+
+  await execute(`UPDATE examples SET ${fields.join(', ')} WHERE id = ?`, params);
+
+  return getExampleById(id) as Promise<Example>;
 }
 
 /**
@@ -64,5 +121,13 @@ export async function updateExample(
  * @returns 被删除的记录
  */
 export async function deleteExample(id: number): Promise<Example> {
-  return prisma.example.delete({ where: { id } });
+  const example = await getExampleById(id);
+
+  if (!example) {
+    throw new Error('记录不存在');
+  }
+
+  await execute('DELETE FROM examples WHERE id = ?', [id]);
+
+  return example;
 }
