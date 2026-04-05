@@ -40,6 +40,11 @@ export type TagItem = {
   updatedAt?: string
 }
 
+export type DeleteCategoryResult = {
+  id: number
+  affectedArticles: number
+}
+
 export type ArticleTag = {
   id: number
   name: string
@@ -108,7 +113,7 @@ export const adminState = reactive({
   dashboardLoading: false,
   dashboardLoaded: false,
   feedbackType: 'info' as FeedbackType,
-  feedbackMessage: 'Element Plus 已接入管理台，未登录访问后台时会自动跳转到登录页。',
+  feedbackMessage: '',
 })
 
 export const roleLabel = computed(() => {
@@ -210,8 +215,12 @@ export async function loadDashboard(options?: { silent?: boolean }) {
   adminState.dashboardLoading = true
 
   try {
+    const shouldLoadAdmins = adminState.currentAdmin?.role === 'super_admin'
+
     const [admins, users, categories, tags, articles] = await Promise.all([
-      request<AdminInfo[]>('/admin/admins', { method: 'GET' }, adminState.token),
+      shouldLoadAdmins
+        ? request<AdminInfo[]>('/admin/admins', { method: 'GET' }, adminState.token)
+        : Promise.resolve([] as AdminInfo[]),
       request<UserInfo[]>('/admin/users', { method: 'GET' }, adminState.token),
       request<CategoryItem[]>('/admin/categories', { method: 'GET' }, adminState.token),
       request<TagItem[]>('/admin/tags', { method: 'GET' }, adminState.token),
@@ -377,6 +386,33 @@ export async function updateCategoryItem(id: number, input: {
     return true
   } catch (error) {
     setFeedback(error instanceof Error ? error.message : '更新分类失败', 'error')
+    return false
+  } finally {
+    adminState.loading = false
+  }
+}
+
+export async function deleteCategoryItem(id: number) {
+  adminState.loading = true
+
+  try {
+    const result = await request<DeleteCategoryResult>(
+      `/admin/categories/${id}`,
+      {
+        method: 'DELETE',
+      },
+      adminState.token,
+    )
+
+    setFeedback(
+      result.affectedArticles > 0
+        ? `分类删除成功，已有 ${result.affectedArticles} 篇文章改为未分类。`
+        : '分类删除成功。',
+      'success',
+    )
+    return true
+  } catch (error) {
+    setFeedback(error instanceof Error ? error.message : '删除分类失败', 'error')
     return false
   } finally {
     adminState.loading = false

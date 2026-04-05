@@ -59,6 +59,22 @@ export async function updateCategory(req: Request, res: Response, next: NextFunc
   }
 }
 
+export async function deleteCategory(req: Request, res: Response, next: NextFunction) {
+  try {
+    const categoryId = Number(req.params.id);
+
+    if (!Number.isInteger(categoryId) || categoryId <= 0) {
+      fail(res, '无效的分类 ID', 400);
+      return;
+    }
+
+    const result = await contentService.deleteCategory(categoryId);
+    success(res, result, '分类删除成功');
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getTags(_req: Request, res: Response, next: NextFunction) {
   try {
     const list = await contentService.listTags();

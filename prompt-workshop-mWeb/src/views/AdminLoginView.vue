@@ -21,7 +21,7 @@ async function submitLogin() {
   const success = await loginAdmin(loginForm)
 
   if (success) {
-    void router.replace('/dashboard')
+    void router.replace('/dashboard/overview')
   }
 }
 </script>

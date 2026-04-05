@@ -11,6 +11,7 @@ router.use(adminAuthMiddleware, requireRole([AdminRole.ADMIN, AdminRole.SUPER_AD
 router.get('/categories', contentController.getCategories);
 router.post('/categories', contentController.createCategory);
 router.patch('/categories/:id', contentController.updateCategory);
+router.delete('/categories/:id', contentController.deleteCategory);
 
 router.get('/tags', contentController.getTags);
 router.post('/tags', contentController.createTag);

@@ -392,6 +392,41 @@ export async function updateCategory(
   );
 }
 
+export async function deleteCategory(id: number) {
+  const category = await queryOne<CategoryItem>(
+    `SELECT
+      id,
+      name,
+      slug,
+      sort,
+      status,
+      created_at AS createdAt,
+      updated_at AS updatedAt
+    FROM categories
+    WHERE id = ?
+    LIMIT 1`,
+    [id],
+  );
+
+  if (!category) {
+    throw new Error('分类不存在');
+  }
+
+  const articleCount = await queryOne<{ total: number }>(
+    `SELECT CAST(COUNT(*) AS SIGNED) AS total
+    FROM articles
+    WHERE category_id = ?`,
+    [id],
+  );
+
+  await execute('DELETE FROM categories WHERE id = ?', [id]);
+
+  return {
+    id,
+    affectedArticles: articleCount?.total ?? 0,
+  };
+}
+
 export async function listTags() {
   return queryRows<TagItem>(
     `SELECT
