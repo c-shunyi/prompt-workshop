@@ -146,6 +146,7 @@ export type AdminRouteName =
 export const API_BASE = 'http://localhost:3000/api'
 const ADMIN_TOKEN_KEY = 'prompt_workshop_admin_token'
 const ADMIN_INFO_KEY = 'prompt_workshop_admin_info'
+const ADMIN_REMEMBERED_LOGIN_KEY = 'prompt_workshop_admin_remembered_login'
 const DEFAULT_PAGE_SIZE = 10
 
 function createPaginationState(): PaginationState {
@@ -188,6 +189,41 @@ function parseStoredAdmin() {
   } catch {
     localStorage.removeItem(ADMIN_INFO_KEY)
     return null
+  }
+}
+
+type RememberedAdminLogin = {
+  username: string
+  password: string
+  rememberPassword: boolean
+}
+
+function createEmptyRememberedAdminLogin(): RememberedAdminLogin {
+  return {
+    username: '',
+    password: '',
+    rememberPassword: false,
+  }
+}
+
+function parseStoredRememberedLogin() {
+  const raw = localStorage.getItem(ADMIN_REMEMBERED_LOGIN_KEY)
+
+  if (!raw) {
+    return createEmptyRememberedAdminLogin()
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<RememberedAdminLogin>
+
+    return {
+      username: typeof parsed.username === 'string' ? parsed.username : '',
+      password: typeof parsed.password === 'string' ? parsed.password : '',
+      rememberPassword: Boolean(parsed.rememberPassword),
+    }
+  } catch {
+    localStorage.removeItem(ADMIN_REMEMBERED_LOGIN_KEY)
+    return createEmptyRememberedAdminLogin()
   }
 }
 
@@ -312,6 +348,21 @@ function persistAdminInfo(adminInfo: AdminInfo) {
   localStorage.setItem(ADMIN_INFO_KEY, JSON.stringify(adminInfo))
 }
 
+function persistRememberedLogin(input: { username: string; password: string }, rememberPassword: boolean) {
+  if (!rememberPassword) {
+    localStorage.removeItem(ADMIN_REMEMBERED_LOGIN_KEY)
+    return
+  }
+
+  const rememberedLogin: RememberedAdminLogin = {
+    username: input.username.trim(),
+    password: input.password,
+    rememberPassword: true,
+  }
+
+  localStorage.setItem(ADMIN_REMEMBERED_LOGIN_KEY, JSON.stringify(rememberedLogin))
+}
+
 function resetPaginationState(state: PaginationState) {
   state.page = 1
   state.pageSize = DEFAULT_PAGE_SIZE
@@ -353,7 +404,14 @@ function clearSession() {
   localStorage.removeItem(ADMIN_INFO_KEY)
 }
 
-export async function loginAdmin(input: { username: string; password: string }) {
+export function getRememberedAdminLogin() {
+  return parseStoredRememberedLogin()
+}
+
+export async function loginAdmin(
+  input: { username: string; password: string },
+  options?: { rememberPassword?: boolean },
+) {
   adminState.loading = true
 
   try {
@@ -363,6 +421,7 @@ export async function loginAdmin(input: { username: string; password: string }) 
     })
 
     persistSession(data.token, data.adminInfo)
+    persistRememberedLogin(input, Boolean(options?.rememberPassword))
     setFeedback('管理台登录成功。', 'success')
     return true
   } catch (error) {

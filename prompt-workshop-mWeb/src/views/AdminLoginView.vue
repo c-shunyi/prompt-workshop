@@ -3,13 +3,15 @@ import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Lock, UserFilled } from '@element-plus/icons-vue'
-import { adminState, loginAdmin } from '../modules/admin'
+import { adminState, getRememberedAdminLogin, loginAdmin } from '../modules/admin'
 
 const router = useRouter()
+const rememberedLogin = getRememberedAdminLogin()
 
 const loginForm = reactive({
-  username: '',
-  password: '',
+  username: rememberedLogin.username,
+  password: rememberedLogin.password,
+  rememberPassword: rememberedLogin.rememberPassword,
 })
 
 async function submitLogin() {
@@ -18,7 +20,15 @@ async function submitLogin() {
     return
   }
 
-  const success = await loginAdmin(loginForm)
+  const success = await loginAdmin(
+    {
+      username: loginForm.username,
+      password: loginForm.password,
+    },
+    {
+      rememberPassword: loginForm.rememberPassword,
+    },
+  )
 
   if (success) {
     void router.replace('/dashboard/overview')
@@ -51,6 +61,7 @@ async function submitLogin() {
             placeholder="用户名"
             size="large"
             :prefix-icon="UserFilled"
+            autocomplete="username"
             @keyup.enter="submitLogin"
           />
         </el-form-item>
@@ -63,9 +74,15 @@ async function submitLogin() {
             size="large"
             :prefix-icon="Lock"
             show-password
+            autocomplete="current-password"
             @keyup.enter="submitLogin"
           />
         </el-form-item>
+
+        <div class="admin-login-options">
+          <el-checkbox v-model="loginForm.rememberPassword">记住密码</el-checkbox>
+          <span class="admin-login-options__hint">会保存在当前浏览器</span>
+        </div>
 
         <el-button
           type="primary"
