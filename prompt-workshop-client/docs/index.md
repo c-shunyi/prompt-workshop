@@ -2,48 +2,71 @@
 layout: home
 
 hero:
-  name: Prompt Workshop Client
-  text: 用 VitePress 搭建的提示词工坊文档站
-  tagline: 聚合项目说明、构建指引与实践文档，让提示词资产更容易整理、发布和维护。
+  name: Prompt Workshop
+  text: 收集优秀 AI 提示词的清新文档站
+  tagline: 把项目构建、功能设计、页面实现与内容创作中的高质量提示词，整理成一个清晰、好查、好复用的知识空间。
   image:
     src: /logo.svg
     alt: Prompt Workshop Logo
   actions:
     - theme: brand
+      text: 浏览简介
+      link: /categories/
+    - theme: alt
       text: 快速开始
       link: /guide/getting-started
-    - theme: alt
-      text: 查看结构
-      link: /reference/project-structure
 
 features:
-  - title: 内容优先
-    details: 直接使用 Markdown 维护项目文档、提示词模板和说明页面，写作与发布路径清晰简单。
-  - title: 开发轻量
-    details: 基于 VitePress，安装依赖后即可本地预览、构建静态站点并部署到任意静态托管平台。
-  - title: 后续可扩展
-    details: 已预留指南与参考目录，后续可以继续接入现有文档、组件示例或自定义主题能力。
+  - title: 按场景整理
+    details: 把项目搭建、页面开发、功能设计等不同主题的提示词分门别类地收录起来，后续查找更轻松。
+  - title: 开箱就能用
+    details: 站点本身基于 VitePress 构建，内容使用 Markdown 管理，写作、维护和部署都足够轻量。
+  - title: 持续沉淀
+    details: 适合把零散的提示词经验沉淀成长期资产，让优秀提示词可以重复使用和不断优化。
 ---
 
-<div class="home-intro">
-  <p>
-    这个站点已经具备基础首页、导航、搜索、侧边栏和自定义样式，可以直接作为
-    <strong>prompt-workshop-client</strong>
-    的文档前端继续迭代。
-  </p>
+<div class="home-showcase">
+  <div class="home-showcase__main">
+    <p class="home-kicker">简介</p>
+    <h2>把好用的提示词，整理成一眼就能找到的内容目录</h2>
+    <p class="home-lead">
+      这里适合沉淀那些真正能提升效率的 AI 提示词。
+      无论是项目初始化、页面开发、功能拆解，还是文案生成与内容创作，
+      都可以在这里形成清晰的分类、说明和使用入口。
+    </p>
 
-  <div class="home-grid">
-    <div class="home-card">
+    <div class="home-pills">
+      <span>项目构建</span>
+      <span>页面实现</span>
+      <span>功能设计</span>
+      <span>内容生成</span>
+      <span>提示词沉淀</span>
+    </div>
+  </div>
+
+  <div class="home-showcase__side">
+    <div class="home-note">
       <h3>适合放什么</h3>
-      <p>项目介绍、使用说明、提示词模板、最佳实践、更新日志。</p>
+      <p>项目介绍、提示词模板、最佳实践、开发说明、持续更新的经验沉淀。</p>
     </div>
-    <div class="home-card">
-      <h3>怎么启动</h3>
-      <p>进入目录后执行 <code>pnpm install</code> 与 <code>pnpm dev</code> 即可预览。</p>
+    <div class="home-note">
+      <h3>如何开始</h3>
+      <p>先从左侧分类或顶部导航进入，再按页面查阅对应的提示词与使用方式。</p>
     </div>
-    <div class="home-card">
-      <h3>怎么扩展</h3>
-      <p>在 <code>docs</code> 下新增 Markdown 页面，并在配置里补充导航或侧边栏即可。</p>
-    </div>
+  </div>
+</div>
+
+<div class="home-grid">
+  <div class="home-card">
+    <h3>清晰分类</h3>
+    <p>将优秀提示词按主题收纳，避免散落在聊天记录、临时文档和本地文件夹里。</p>
+  </div>
+  <div class="home-card">
+    <h3>轻量维护</h3>
+    <p>使用 Markdown 就能快速新增页面，团队成员也更容易一起协作补充内容。</p>
+  </div>
+  <div class="home-card">
+    <h3>长期复用</h3>
+    <p>把一时有效的经验沉淀成长期资产，让提示词真正服务于后续项目与工作流。</p>
   </div>
 </div>
