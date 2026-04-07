@@ -1,0 +1,49 @@
+:root {
+  --vp-c-brand-1: #bd5d1f;
+  --vp-c-brand-2: #d47a33;
+  --vp-c-brand-3: #e89a58;
+  --vp-c-brand-soft: rgba(212, 122, 51, 0.16);
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, #8f4314 0%, #d47a33 50%, #f0ba83 100%);
+  --vp-home-hero-image-background-image: radial-gradient(circle at center, rgba(212, 122, 51, 0.4), rgba(255, 255, 255, 0));
+  --vp-home-hero-image-filter: blur(68px);
+}
+
+.VPContent.is-home {
+  background:
+    radial-gradient(circle at top left, rgba(240, 186, 131, 0.18), transparent 24rem),
+    linear-gradient(180deg, rgba(255, 248, 239, 0.95), rgba(255, 255, 255, 1) 40%);
+}
+
+.vp-doc .home-intro {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(189, 93, 31, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+}
+
+.vp-doc .home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.vp-doc .home-card {
+  padding: 1.25rem;
+  border-radius: 18px;
+  border: 1px solid rgba(189, 93, 31, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(252, 245, 238, 0.92));
+  box-shadow: 0 14px 40px rgba(122, 66, 30, 0.08);
+}
+
+.vp-doc .home-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.vp-doc .home-card p {
+  margin: 0;
+}
