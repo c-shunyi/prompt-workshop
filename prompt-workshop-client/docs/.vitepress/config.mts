@@ -1,4 +1,12 @@
+import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vitepress'
+import { buildCategorySidebarItems, normalizeCategoryTree } from './utils/category.mjs'
+
+const rawCategoryTree = JSON.parse(
+  readFileSync(new URL('./category-tree.json', import.meta.url), 'utf8')
+)
+const categoryTree = normalizeCategoryTree(rawCategoryTree)
+const categorySidebarItems = buildCategorySidebarItems(categoryTree)
 
 export default defineConfig({
   title: 'Prompt Workshop',
@@ -10,6 +18,7 @@ export default defineConfig({
     logo: '/logo.svg',
     nav: [
       { text: '首页', link: '/' },
+      { text: '分类', link: '/categories/' },
       { text: '指南', link: '/guide/' },
       { text: '参考', link: '/reference/project-structure' }
     ],
@@ -27,17 +36,24 @@ export default defineConfig({
         {
           text: '参考',
           items: [
+            { text: '分类配置', link: '/reference/category-config' },
             { text: '项目结构', link: '/reference/project-structure' }
           ]
         }
+      ],
+      '/categories/': [
+        {
+          text: '分类',
+          items: [
+            { text: '分类总览', link: '/categories/' }
+          ]
+        },
+        ...categorySidebarItems
       ]
     },
     search: {
       provider: 'local'
     },
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/' }
-    ],
     footer: {
       message: 'Built with VitePress',
       copyright: 'Copyright © 2026 Prompt Workshop'

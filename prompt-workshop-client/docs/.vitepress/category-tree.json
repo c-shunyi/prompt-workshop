@@ -1,0 +1,44 @@
+[
+  {
+    "title": "项目使用",
+    "description": "面向阅读者和使用者的入门内容",
+    "children": [
+      {
+        "title": "上手指南",
+        "children": [
+          {
+            "title": "指南概览",
+            "file": "guide/index.md",
+            "description": "了解当前文档站点包含的主要内容。"
+          },
+          {
+            "title": "快速开始",
+            "file": "guide/getting-started.md",
+            "description": "安装依赖、启动开发服务与构建站点。"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "项目维护",
+    "description": "面向维护者的配置与结构说明",
+    "children": [
+      {
+        "title": "文档配置",
+        "children": [
+          {
+            "title": "分类配置",
+            "file": "reference/category-config.md",
+            "description": "查看 JSON 分类文件的结构约定与示例。"
+          },
+          {
+            "title": "项目结构",
+            "file": "reference/project-structure.md",
+            "description": "查看当前 VitePress 项目目录结构。"
+          }
+        ]
+      }
+    ]
+  }
+]
