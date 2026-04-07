@@ -11,11 +11,10 @@ const leafPageCount = countLeafPages(categoryTree)
 <template>
   <section class="category-panel">
     <header class="category-panel__header">
-      <p class="category-panel__eyebrow">JSON 驱动分类</p>
-      <h2>文档分类总览</h2>
+      <p class="category-panel__eyebrow">Prompt Workshop</p>
+      <h2>提示词分类导航</h2>
       <p class="category-panel__lead">
-        当前页面内容来自 <code>docs/.vitepress/category-tree.json</code>。你只需要维护一份 JSON，
-        分类页和“分类”侧边栏都会跟着一起更新。
+        这里按主题整理了站点中的提示词内容。你可以从顶级分类逐层展开，快速找到对应的页面和提示词模板。
       </p>
       <div class="category-panel__stats">
         <span>{{ topLevelCount }} 个顶级分类</span>
