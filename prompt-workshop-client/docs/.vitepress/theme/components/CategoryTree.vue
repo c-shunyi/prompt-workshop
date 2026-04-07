@@ -22,7 +22,7 @@ const leafPageCount = countLeafPages(categoryTree)
       </div>
     </header>
 
-    <ul class="category-tree">
+    <ul class="category-grid">
       <CategoryTreeNode
         v-for="node in categoryTree"
         :key="`${node.type}-${node.title}`"

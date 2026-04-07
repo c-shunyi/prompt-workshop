@@ -9,9 +9,9 @@ const categoryTree = normalizeCategoryTree(rawCategoryTree)
 const categorySidebarItems = buildCategorySidebarItems(categoryTree)
 const categorySidebar = [
   {
-    text: '分类',
+    text: '提示词大全',
     items: [
-      { text: '分类总览', link: '/categories/' }
+      { text: '简介', link: '/categories/' }
     ]
   },
   ...categorySidebarItems
