@@ -40,5 +40,16 @@
         ]
       }
     ]
+  },
+  {
+    "title": "HTML 网页小游戏",
+    "description": "收录适合使用原生 HTML、CSS 与 JavaScript 实现的小游戏提示词。",
+    "children": [
+      {
+        "title": "贪吃蛇",
+        "file": "games/snake.md",
+        "description": "经典贪吃蛇网页小游戏的实现与构建提示词。"
+      }
+    ]
   }
 ]

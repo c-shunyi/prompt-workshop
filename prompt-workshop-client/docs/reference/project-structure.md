@@ -15,6 +15,8 @@ prompt-workshop-client/
 │  │     └─ index.ts
 │  ├─ categories/
 │  │  └─ index.md
+│  ├─ games/
+│  │  └─ snake.md
 │  ├─ guide/
 │  │  ├─ getting-started.md
 │  │  └─ index.md
@@ -35,6 +37,7 @@ prompt-workshop-client/
 - `docs/.vitepress/utils/category.mjs`：分类 JSON 的校验、路径转换与侧边栏生成逻辑
 - `docs/.vitepress/theme/`：主题扩展入口与自定义样式
 - `docs/categories/`：分类简介页面，提示用户从左侧分类菜单进入对应内容
+- `docs/games/`：小游戏相关的提示词页面
 - `docs/public/`：静态资源目录，构建时会原样复制
 - `docs/guide/`：面向使用者的文档内容
 - `docs/reference/`：面向维护者的结构与约定说明
