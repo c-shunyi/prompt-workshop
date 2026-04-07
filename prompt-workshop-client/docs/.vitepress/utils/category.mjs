@@ -116,6 +116,30 @@ export function buildCategorySidebarItems(nodes) {
   })
 }
 
+export function collectSidebarPrefixes(nodes) {
+  const prefixes = new Set()
+
+  const visit = (items) => {
+    for (const node of items) {
+      if (node.type === 'leaf') {
+        const match = node.link.match(/^\/([^/]+)(?:\/|$)/)
+
+        if (match && match[1] !== 'categories') {
+          prefixes.add(`/${match[1]}/`)
+        }
+
+        continue
+      }
+
+      visit(node.items)
+    }
+  }
+
+  visit(nodes)
+
+  return [...prefixes].sort()
+}
+
 export function countLeafPages(nodes) {
   return nodes.reduce((count, node) => {
     if (node.type === 'leaf') {

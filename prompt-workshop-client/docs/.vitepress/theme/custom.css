@@ -9,10 +9,25 @@
   --vp-home-hero-image-filter: blur(68px);
 }
 
+.dark {
+  --vp-c-brand-1: #f0ba83;
+  --vp-c-brand-2: #d47a33;
+  --vp-c-brand-3: #bd5d1f;
+  --vp-c-brand-soft: rgba(240, 186, 131, 0.14);
+  --vp-home-hero-name-background: linear-gradient(120deg, #f6d1ab 0%, #f0ba83 42%, #d47a33 100%);
+  --vp-home-hero-image-background-image: radial-gradient(circle at center, rgba(212, 122, 51, 0.26), rgba(16, 18, 24, 0));
+}
+
 .VPContent.is-home {
   background:
     radial-gradient(circle at top left, rgba(240, 186, 131, 0.18), transparent 24rem),
     linear-gradient(180deg, rgba(255, 248, 239, 0.95), rgba(255, 255, 255, 1) 40%);
+}
+
+.dark .VPContent.is-home {
+  background:
+    radial-gradient(circle at top left, rgba(212, 122, 51, 0.18), transparent 26rem),
+    linear-gradient(180deg, rgba(24, 28, 36, 0.96), rgba(15, 17, 22, 1) 42%);
 }
 
 .vp-doc .home-intro {
@@ -39,6 +54,17 @@
   box-shadow: 0 14px 40px rgba(122, 66, 30, 0.08);
 }
 
+.dark .vp-doc .home-intro {
+  border-color: rgba(240, 186, 131, 0.12);
+  background: rgba(24, 28, 36, 0.76);
+}
+
+.dark .vp-doc .home-card {
+  border-color: rgba(240, 186, 131, 0.12);
+  background: linear-gradient(180deg, rgba(28, 33, 42, 0.96), rgba(18, 22, 29, 0.94));
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.24);
+}
+
 .vp-doc .home-card h3 {
   margin-top: 0;
   margin-bottom: 0.5rem;
@@ -55,6 +81,12 @@
   border-radius: 24px;
   background: linear-gradient(180deg, rgba(255, 251, 247, 0.95), rgba(255, 255, 255, 0.98));
   box-shadow: 0 18px 46px rgba(122, 66, 30, 0.08);
+}
+
+.dark .vp-doc .category-panel {
+  border-color: rgba(240, 186, 131, 0.12);
+  background: linear-gradient(180deg, rgba(25, 30, 39, 0.94), rgba(17, 20, 27, 0.98));
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.24);
 }
 
 .vp-doc .category-panel__header h2 {
@@ -113,6 +145,11 @@
   background: rgba(255, 255, 255, 0.85);
 }
 
+.dark .vp-doc .category-branch {
+  border-color: rgba(240, 186, 131, 0.12);
+  background: rgba(27, 32, 42, 0.86);
+}
+
 .vp-doc .category-branch__summary {
   display: flex;
   flex-direction: column;
@@ -159,6 +196,16 @@
   transform: translateY(-2px);
   border-color: rgba(189, 93, 31, 0.3);
   box-shadow: 0 12px 30px rgba(122, 66, 30, 0.08);
+}
+
+.dark .vp-doc .category-leaf {
+  border-color: rgba(240, 186, 131, 0.12);
+  background: linear-gradient(180deg, rgba(31, 36, 47, 0.98), rgba(19, 23, 31, 0.96));
+}
+
+.dark .vp-doc .category-leaf:hover {
+  border-color: rgba(240, 186, 131, 0.26);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
 }
 
 .vp-doc .category-leaf__title {
