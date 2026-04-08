@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>俄罗斯方块</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f0f23;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Courier New', monospace;
+    color: #e0e0e0;
+  }
+  h1 { font-size: 28px; margin-bottom: 10px; color: #00ccff; text-shadow: 0 0 10px #00ccff55; }
+  .container { display: flex; gap: 20px; align-items: flex-start; }
+  canvas { border: 3px solid #00ccff; box-shadow: 0 0 20px #00ccff33; }
+  .sidebar { display: flex; flex-direction: column; gap: 15px; }
+  .panel {
+    background: #1a1a3e;
+    border: 2px solid #00ccff44;
+    padding: 15px;
+    min-width: 130px;
+  }
+  .panel h3 { color: #00ccff; font-size: 14px; margin-bottom: 5px; }
+  .panel p { font-size: 20px; color: #ffcc00; }
+  #nextCanvas { border: 2px solid #00ccff44; background: #1a1a3e; }
+  button {
+    margin-top: 15px;
+    padding: 10px 30px;
+    font-size: 18px;
+    font-family: 'Courier New', monospace;
+    background: #00ccff;
+    color: #0f0f23;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  button:hover { background: #0099cc; }
+</style>
+</head>
+<body>
+<h1>🧱 俄罗斯方块</h1>
+<div class="container">
+  <canvas id="board" width="240" height="480"></canvas>
+  <div class="sidebar">
+    <div class="panel"><h3>得分</h3><p id="score">0</p></div>
+    <div class="panel"><h3>行数</h3><p id="lines">0</p></div>
+    <div class="panel"><h3>等级</h3><p id="level">1</p></div>
+    <div class="panel"><h3>下一个</h3><canvas id="nextCanvas" width="100" height="100"></canvas></div>
+  </div>
+</div>
+<button id="startBtn">开始游戏</button>
+<script>
+const board = document.getElementById('board');
+const ctx = board.getContext('2d');
+const nextCvs = document.getElementById('nextCanvas');
+const nctx = nextCvs.getContext('2d');
+const COLS = 10, ROWS = 20, SZ = 24;
+const COLORS = ['#00ffff','#ffcc00','#aa00ff','#00ff00','#ff4444','#0066ff','#ff8800'];
+const SHAPES = [
+  [[1,1,1,1]],
+  [[1,1],[1,1]],
+  [[0,1,0],[1,1,1]],
+  [[0,1,1],[1,1,0]],
+  [[1,1,0],[0,1,1]],
+  [[1,0,0],[1,1,1]],
+  [[0,0,1],[1,1,1]]
+];
+let grid, piece, nextPiece, px, py, score, lines, level, timer, running;
+
+function newPiece(shape, color) {
+  return { shape: shape.map(r => [...r]), color };
+}
+function randomPiece() {
+  const i = Math.floor(Math.random() * SHAPES.length);
+  return newPiece(SHAPES[i], COLORS[i]);
+}
+function rotate(shape) {
+  const rows = shape.length, cols = shape[0].length;
+  const r = Array.from({ length: cols }, () => Array(rows).fill(0));
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) r[x][rows - 1 - y] = shape[y][x];
+  return r;
+}
+function valid(shape, ox, oy) {
+  for (let y = 0; y < shape.length; y++)
+    for (let x = 0; x < shape[y].length; x++)
+      if (shape[y][x]) {
+        const nx = ox + x, ny = oy + y;
+        if (nx < 0 || nx >= COLS || ny >= ROWS || (ny >= 0 && grid[ny][nx])) return false;
+      }
+  return true;
+}
+function lock() {
+  piece.shape.forEach((row, y) => row.forEach((v, x) => {
+    if (v && py + y >= 0) grid[py + y][px + x] = piece.color;
+  }));
+  let cleared = 0;
+  for (let y = ROWS - 1; y >= 0; y--) {
+    if (grid[y].every(c => c)) { grid.splice(y, 1); grid.unshift(Array(COLS).fill(0)); cleared++; y++; }
+  }
+  const pts = [0, 100, 300, 500, 800];
+  score += (pts[cleared] || 0) * level;
+  lines += cleared;
+  level = Math.floor(lines / 10) + 1;
+  document.getElementById('score').textContent = score;
+  document.getElementById('lines').textContent = lines;
+  document.getElementById('level').textContent = level;
+  piece = nextPiece; nextPiece = randomPiece();
+  px = Math.floor((COLS - piece.shape[0].length) / 2); py = -piece.shape.length;
+  drawNext();
+  if (!valid(piece.shape, px, py + 1) && py < 0) { running = false; clearInterval(timer); alert('游戏结束！得分：' + score); }
+}
+function drop() {
+  if (!running) return;
+  if (valid(piece.shape, px, py + 1)) py++;
+  else lock();
+  draw();
+}
+function draw() {
+  ctx.fillStyle = '#0f0f23'; ctx.fillRect(0, 0, board.width, board.height);
+  ctx.strokeStyle = '#1a1a3e';
+  for (let x = 0; x <= COLS; x++) { ctx.beginPath(); ctx.moveTo(x*SZ,0); ctx.lineTo(x*SZ,ROWS*SZ); ctx.stroke(); }
+  for (let y = 0; y <= ROWS; y++) { ctx.beginPath(); ctx.moveTo(0,y*SZ); ctx.lineTo(COLS*SZ,y*SZ); ctx.stroke(); }
+  grid.forEach((row, y) => row.forEach((c, x) => { if (c) { ctx.fillStyle = c; ctx.fillRect(x*SZ+1,y*SZ+1,SZ-2,SZ-2); } }));
+  piece.shape.forEach((row, y) => row.forEach((v, x) => {
+    if (v && py + y >= 0) { ctx.fillStyle = piece.color; ctx.fillRect((px+x)*SZ+1,(py+y)*SZ+1,SZ-2,SZ-2); }
+  }));
+}
+function drawNext() {
+  nctx.fillStyle = '#1a1a3e'; nctx.fillRect(0, 0, 100, 100);
+  const s = nextPiece.shape, sz = 20;
+  const ox = (100 - s[0].length * sz) / 2, oy = (100 - s.length * sz) / 2;
+  s.forEach((row, y) => row.forEach((v, x) => {
+    if (v) { nctx.fillStyle = nextPiece.color; nctx.fillRect(ox + x*sz+1, oy + y*sz+1, sz-2, sz-2); }
+  }));
+}
+function init() {
+  grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+  score = 0; lines = 0; level = 1;
+  document.getElementById('score').textContent = '0';
+  document.getElementById('lines').textContent = '0';
+  document.getElementById('level').textContent = '1';
+  piece = randomPiece(); nextPiece = randomPiece();
+  px = Math.floor((COLS - piece.shape[0].length) / 2); py = 0;
+  running = true;
+  drawNext();
+  if (timer) clearInterval(timer);
+  timer = setInterval(drop, 500);
+  draw();
+}
+document.addEventListener('keydown', e => {
+  if (!running) return;
+  switch (e.key) {
+    case 'ArrowLeft':  if (valid(piece.shape, px-1, py)) px--; break;
+    case 'ArrowRight': if (valid(piece.shape, px+1, py)) px++; break;
+    case 'ArrowDown':  if (valid(piece.shape, px, py+1)) py++; break;
+    case 'ArrowUp': { const r = rotate(piece.shape); if (valid(r, px, py)) piece.shape = r; } break;
+    case ' ': while (valid(piece.shape, px, py+1)) py++; lock(); break;
+  }
+  e.preventDefault();
+  draw();
+});
+document.getElementById('startBtn').addEventListener('click', init);
+</script>
+</body>
+</html>

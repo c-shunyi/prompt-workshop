@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>打砖块</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Courier New', monospace;
+    color: #e0e0e0;
+  }
+  h1 { font-size: 28px; margin-bottom: 10px; color: #ff00ff; text-shadow: 0 0 15px #ff00ff88; }
+  .info { display: flex; gap: 30px; margin-bottom: 10px; font-size: 16px; }
+  .info span { color: #00ffff; text-shadow: 0 0 8px #00ffff88; }
+  canvas { border: 2px solid #ff00ff; box-shadow: 0 0 30px #ff00ff44; }
+  button {
+    margin-top: 15px; padding: 10px 30px; font-size: 18px;
+    font-family: 'Courier New', monospace;
+    background: transparent; color: #ff00ff;
+    border: 2px solid #ff00ff; cursor: pointer; font-weight: bold;
+    text-shadow: 0 0 8px #ff00ff88; box-shadow: 0 0 15px #ff00ff44;
+  }
+  button:hover { background: #ff00ff22; }
+</style>
+</head>
+<body>
+<h1>🧱 打砖块</h1>
+<div class="info">
+  得分：<span id="score">0</span>
+  关卡：<span id="level">1</span>
+  生命：<span id="lives">3</span>
+</div>
+<canvas id="game" width="480" height="400"></canvas>
+<button id="startBtn">开始游戏</button>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const COLORS = ['#ff00ff','#ff0066','#ff6600','#ffcc00','#00ff66','#00ccff','#6600ff'];
+let paddle, ball, bricks, score, level, lives, running, animID;
+
+function initLevel() {
+  const rowCount = Math.min(4 + level, 8);
+  const colCount = 8;
+  const bw = (W - 20) / colCount, bh = 18;
+  bricks = [];
+  for (let r = 0; r < rowCount; r++)
+    for (let c = 0; c < colCount; c++)
+      bricks.push({ x: 10 + c * bw, y: 30 + r * (bh + 4), w: bw - 4, h: bh, color: COLORS[r % COLORS.length], points: (rowCount - r) * 10, alive: true });
+  ball = { x: W/2, y: H - 50, dx: 3, dy: -(3 + level * 0.3), r: 6 };
+  paddle = { x: W/2 - 40, y: H - 25, w: 80, h: 12 };
+}
+
+function init() {
+  score = 0; level = 1; lives = 3;
+  update(); initLevel(); running = true;
+  if (animID) cancelAnimationFrame(animID);
+  loop();
+}
+function update() {
+  document.getElementById('score').textContent = score;
+  document.getElementById('level').textContent = level;
+  document.getElementById('lives').textContent = lives;
+}
+function loop() {
+  if (!running) return;
+  step(); draw();
+  animID = requestAnimationFrame(loop);
+}
+function step() {
+  ball.x += ball.dx; ball.y += ball.dy;
+  if (ball.x - ball.r < 0 || ball.x + ball.r > W) ball.dx = -ball.dx;
+  if (ball.y - ball.r < 0) ball.dy = -ball.dy;
+  if (ball.y + ball.r > H) {
+    lives--;
+    update();
+    if (lives <= 0) { running = false; alert('游戏结束！得分：' + score); return; }
+    ball.x = W/2; ball.y = H - 50; ball.dx = 3; ball.dy = -(3 + level * 0.3);
+  }
+  // paddle
+  if (ball.dy > 0 && ball.y + ball.r >= paddle.y && ball.x >= paddle.x && ball.x <= paddle.x + paddle.w && ball.y + ball.r <= paddle.y + paddle.h + 4) {
+    const hit = (ball.x - (paddle.x + paddle.w/2)) / (paddle.w/2);
+    ball.dx = hit * 5;
+    ball.dy = -Math.abs(ball.dy);
+  }
+  // bricks
+  bricks.forEach(b => {
+    if (!b.alive) return;
+    if (ball.x + ball.r > b.x && ball.x - ball.r < b.x + b.w && ball.y + ball.r > b.y && ball.y - ball.r < b.y + b.h) {
+      b.alive = false; ball.dy = -ball.dy; score += b.points; update();
+    }
+  });
+  if (bricks.every(b => !b.alive)) {
+    level++; update(); initLevel();
+  }
+}
+function draw() {
+  ctx.fillStyle = '#0a0a1a'; ctx.fillRect(0, 0, W, H);
+  // bricks
+  bricks.forEach(b => {
+    if (!b.alive) return;
+    ctx.shadowColor = b.color; ctx.shadowBlur = 10;
+    ctx.fillStyle = b.color; ctx.fillRect(b.x, b.y, b.w, b.h);
+  });
+  ctx.shadowBlur = 0;
+  // paddle
+  ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 12;
+  ctx.fillStyle = '#00ffff'; ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
+  ctx.shadowBlur = 0;
+  // ball
+  ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
+  ctx.shadowColor = '#fff'; ctx.shadowBlur = 15;
+  ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.shadowBlur = 0;
+}
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  paddle.x = Math.max(0, Math.min(W - paddle.w, e.clientX - rect.left - paddle.w/2));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') paddle.x = Math.max(0, paddle.x - 25);
+  if (e.key === 'ArrowRight') paddle.x = Math.min(W - paddle.w, paddle.x + 25);
+});
+document.getElementById('startBtn').addEventListener('click', init);
+</script>
+</body>
+</html>

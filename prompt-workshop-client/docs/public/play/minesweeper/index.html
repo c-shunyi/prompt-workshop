@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>扫雷</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #c0c0c0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Courier New', monospace;
+  }
+  h1 { font-size: 24px; margin-bottom: 10px; color: #333; }
+  .controls { display: flex; gap: 10px; margin-bottom: 10px; }
+  .controls button {
+    padding: 6px 14px; font-size: 14px; cursor: pointer;
+    background: #e0e0e0; border: 2px outset #fff; font-family: inherit;
+  }
+  .controls button:active, .controls button.active { border-style: inset; background: #d0d0d0; }
+  .top-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #c0c0c0; border: 3px inset #aaa;
+    padding: 5px 10px; margin-bottom: 2px; min-width: 100%;
+  }
+  .counter {
+    background: #300; color: #f00; font-size: 24px; font-weight: bold;
+    padding: 2px 8px; min-width: 50px; text-align: center; letter-spacing: 2px;
+  }
+  .face { font-size: 24px; cursor: pointer; background: #c0c0c0; border: 2px outset #fff; padding: 2px 6px; }
+  .face:active { border-style: inset; }
+  #board {
+    display: inline-grid;
+    border: 3px inset #aaa;
+    background: #c0c0c0;
+  }
+  .cell {
+    width: 28px; height: 28px;
+    border: 2px outset #fff;
+    background: #c0c0c0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: bold;
+    cursor: pointer; user-select: none;
+  }
+  .cell.revealed { border: 1px solid #999; background: #d0d0d0; }
+  .cell.mine-hit { background: #f44; }
+  .c1{color:#0000ff}.c2{color:#008000}.c3{color:#ff0000}.c4{color:#000080}
+  .c5{color:#800000}.c6{color:#008080}.c7{color:#000}.c8{color:#808080}
+</style>
+</head>
+<body>
+<h1>💣 扫雷</h1>
+<div class="controls">
+  <button onclick="start(9,9,10)" id="b1">初级</button>
+  <button onclick="start(16,16,40)" id="b2">中级</button>
+  <button onclick="start(30,16,99)" id="b3">高级</button>
+</div>
+<div id="wrapper"></div>
+<script>
+let cols,rows,mines,grid,revealed,flags,firstClick,gameOver,timerID,seconds;
+const NUM_COLORS = ['','c1','c2','c3','c4','c5','c6','c7','c8'];
+
+function start(c,r,m) {
+  cols=c; rows=r; mines=m;
+  grid=Array.from({length:r},()=>Array(c).fill(0));
+  revealed=Array.from({length:r},()=>Array(c).fill(false));
+  flags=Array.from({length:r},()=>Array(c).fill(false));
+  firstClick=true; gameOver=false; seconds=0;
+  if(timerID) clearInterval(timerID); timerID=null;
+  render();
+}
+
+function placeMines(sy,sx) {
+  let placed=0;
+  while(placed<mines) {
+    const y=Math.floor(Math.random()*rows), x=Math.floor(Math.random()*cols);
+    if(grid[y][x]===-1||(Math.abs(y-sy)<=1&&Math.abs(x-sx)<=1)) continue;
+    grid[y][x]=-1; placed++;
+  }
+  for(let y=0;y<rows;y++) for(let x=0;x<cols;x++) {
+    if(grid[y][x]===-1) continue;
+    let cnt=0;
+    for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) {
+      const ny=y+dy,nx=x+dx;
+      if(ny>=0&&ny<rows&&nx>=0&&nx<cols&&grid[ny][nx]===-1) cnt++;
+    }
+    grid[y][x]=cnt;
+  }
+}
+
+function reveal(y,x) {
+  if(y<0||y>=rows||x<0||x>=cols||revealed[y][x]||flags[y][x]) return;
+  revealed[y][x]=true;
+  if(grid[y][x]===0) {
+    for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) reveal(y+dy,x+dx);
+  }
+}
+
+function checkWin() {
+  let cnt=0;
+  for(let y=0;y<rows;y++) for(let x=0;x<cols;x++) if(revealed[y][x]) cnt++;
+  return cnt===rows*cols-mines;
+}
+
+function render() {
+  const w=document.getElementById('wrapper');
+  const flagCount=flags.flat().filter(Boolean).length;
+  let html=`<div class="top-bar" style="width:${cols*28}px">
+    <div class="counter">${String(mines-flagCount).padStart(3,'0')}</div>
+    <div class="face" onclick="start(${cols},${rows},${mines})">${gameOver==='win'?'😎':gameOver==='lose'?'😵':'😊'}</div>
+    <div class="counter">${String(seconds).padStart(3,'0')}</div>
+  </div>`;
+  html+=`<div id="board" style="grid-template-columns:repeat(${cols},28px)">`;
+  for(let y=0;y<rows;y++) for(let x=0;x<cols;x++) {
+    const r=revealed[y][x], f=flags[y][x], v=grid[y][x];
+    let cls='cell', txt='';
+    if(r) {
+      cls+=' revealed';
+      if(v===-1) { cls+=' mine-hit'; txt='💣'; }
+      else if(v>0) { cls+=` ${NUM_COLORS[v]}`; txt=v; }
+    } else if(f) { txt='🚩'; }
+    if(gameOver&&!r&&v===-1&&!f) { cls+=' revealed'; txt='💣'; }
+    html+=`<div class="${cls}" data-y="${y}" data-x="${x}">${txt}</div>`;
+  }
+  html+='</div>';
+  w.innerHTML=html;
+  document.getElementById('board').addEventListener('click', e => {
+    if(gameOver) return;
+    const c=e.target.closest('.cell'); if(!c) return;
+    const y=+c.dataset.y, x=+c.dataset.x;
+    if(flags[y][x]) return;
+    if(firstClick) { placeMines(y,x); firstClick=false; timerID=setInterval(()=>{seconds++;render();},1000); }
+    if(grid[y][x]===-1) { revealed[y][x]=true; gameOver='lose'; clearInterval(timerID); }
+    else { reveal(y,x); if(checkWin()){gameOver='win';clearInterval(timerID);} }
+    render();
+  });
+  document.getElementById('board').addEventListener('contextmenu', e => {
+    e.preventDefault(); if(gameOver) return;
+    const c=e.target.closest('.cell'); if(!c) return;
+    const y=+c.dataset.y, x=+c.dataset.x;
+    if(revealed[y][x]) return;
+    flags[y][x]=!flags[y][x];
+    render();
+  });
+}
+start(9,9,10);
+</script>
+</body>
+</html>
