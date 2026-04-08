@@ -54,6 +54,26 @@
         "title": "俄罗斯方块",
         "file": "games/tetris.md",
         "description": "经典俄罗斯方块网页小游戏的实现与构建提示词。"
+      },
+      {
+        "title": "2048",
+        "file": "games/2048.md",
+        "description": "经典 2048 数字合并网页小游戏的实现与构建提示词。"
+      },
+      {
+        "title": "扫雷",
+        "file": "games/minesweeper.md",
+        "description": "经典扫雷网页小游戏的实现与构建提示词。"
+      },
+      {
+        "title": "打砖块",
+        "file": "games/breakout.md",
+        "description": "经典打砖块网页小游戏的实现与构建提示词。"
+      },
+      {
+        "title": "Flappy Bird",
+        "file": "games/flappy-bird.md",
+        "description": "Flappy Bird 网页小游戏的实现与构建提示词。"
       }
     ]
   }
