@@ -49,6 +49,11 @@
         "title": "贪吃蛇",
         "file": "games/snake.md",
         "description": "经典贪吃蛇网页小游戏的实现与构建提示词。"
+      },
+      {
+        "title": "俄罗斯方块",
+        "file": "games/tetris.md",
+        "description": "经典俄罗斯方块网页小游戏的实现与构建提示词。"
       }
     ]
   }
