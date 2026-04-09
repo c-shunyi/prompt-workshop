@@ -20,4 +20,4 @@
 
 ## 在线体验
 
-👉 <a href="/play/minesweeper/" target="_blank">点击试玩扫雷</a>
+👉 <a href="/play/minesweeper/index.html" target="_blank">点击试玩扫雷</a>

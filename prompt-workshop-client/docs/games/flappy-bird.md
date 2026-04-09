@@ -21,4 +21,4 @@
 
 ## 在线体验
 
-👉 <a href="/play/flappy-bird/" target="_blank">点击试玩 Flappy Bird</a>
+👉 <a href="/play/flappy-bird/index.html" target="_blank">点击试玩 Flappy Bird</a>

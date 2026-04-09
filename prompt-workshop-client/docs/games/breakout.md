@@ -21,4 +21,4 @@
 
 ## 在线体验
 
-👉 <a href="/play/breakout/" target="_blank">点击试玩打砖块</a>
+👉 <a href="/play/breakout/index.html" target="_blank">点击试玩打砖块</a>

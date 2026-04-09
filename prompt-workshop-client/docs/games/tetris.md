@@ -21,4 +21,4 @@
 
 ## 在线体验
 
-👉 <a href="/play/tetris/" target="_blank">点击试玩俄罗斯方块</a>
+👉 <a href="/play/tetris/index.html" target="_blank">点击试玩俄罗斯方块</a>

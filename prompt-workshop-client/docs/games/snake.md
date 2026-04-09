@@ -18,4 +18,4 @@
 
 ## 在线体验
 
-👉 <a href="/play/snake/" target="_blank">点击试玩贪吃蛇</a>
+👉 <a href="/play/snake/index.html" target="_blank">点击试玩贪吃蛇</a>
