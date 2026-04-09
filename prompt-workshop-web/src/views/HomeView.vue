@@ -85,7 +85,7 @@ onMounted(() => {
           <input
             v-model.trim="filters.keyword"
             class="site-search__input"
-            placeholder="搜索标题、摘要或正文"
+            placeholder="搜索提示词..."
           />
           <button class="primary-btn site-search__button" type="submit">
             搜索
@@ -96,22 +96,22 @@ onMounted(() => {
 
     <section class="home-hero">
       <div class="home-hero__copy">
-        <p class="eyebrow">Discover Stories</p>
-        <h1>经典文章分享平台首页</h1>
+        <p class="eyebrow">Prompt Workshop</p>
+        <h1>发现好用又有趣的 AI 提示词</h1>
         <p class="hero-text">
-          顶部导航承载登录和发布入口，左侧是文章分类，右侧是当前分类下的文章内容流。现在已经按你说的结构切成真正的内容平台布局。
+          一个开放的提示词收集站——汇集编程、写作、设计、娱乐等各类场景的优质提示词，帮你把 AI 用得更好。
         </p>
         <div class="hero-pills">
-          <span>分类 {{ contentState.categories.length }} 个</span>
-          <span>文章 {{ contentState.homeArticles.length }} 篇</span>
-          <span>{{ authState.currentUser ? '已登录创作模式' : '访客浏览模式' }}</span>
+          <span>{{ contentState.categories.length }} 个分类</span>
+          <span>{{ contentState.homeArticles.length }} 条提示词</span>
+          <span>{{ authState.currentUser ? '已登录，可提交提示词' : '登录后可分享提示词' }}</span>
         </div>
       </div>
 
       <article v-if="featuredArticle" class="featured-story" @click="openArticle(featuredArticle.id)">
-        <p class="featured-story__label">精选文章</p>
+        <p class="featured-story__label">精选提示词</p>
         <h2>{{ featuredArticle.title }}</h2>
-        <p>{{ featuredArticle.summary || '这篇文章暂时还没有摘要。' }}</p>
+        <p>{{ featuredArticle.summary || '这条提示词暂时还没有摘要。' }}</p>
         <div class="featured-story__meta">
           <span>{{ featuredArticle.categoryName || '未分类' }}</span>
           <span>{{ featuredArticle.authorNickname || featuredArticle.authorUsername }}</span>
@@ -124,7 +124,7 @@ onMounted(() => {
       <aside class="category-sidebar">
         <div class="category-sidebar__head">
           <p class="panel-kicker">分类导航</p>
-          <h2>文章分类</h2>
+          <h2>提示词分类</h2>
         </div>
 
         <div class="category-sidebar__list">
@@ -134,7 +134,7 @@ onMounted(() => {
             type="button"
             @click="selectCategory()"
           >
-            <span>全部文章</span>
+            <span>全部提示词</span>
             <strong>{{ contentState.homeArticles.length }}</strong>
           </button>
 
@@ -155,7 +155,7 @@ onMounted(() => {
           <p class="status-label">当前分类</p>
           <p class="status-message">{{ selectedCategory?.name || '全部文章' }}</p>
           <p class="status-meta">
-            {{ selectedCategory ? '点击右侧文章可进入详情页阅读 Markdown 正文。' : '左侧点击分类即可切换右侧内容区。' }}
+            {{ selectedCategory ? '点击右侧卡片查看提示词详情和使用方法。' : '选择左侧分类浏览对应场景的提示词。' }}
           </p>
         </div>
       </aside>
@@ -175,7 +175,7 @@ onMounted(() => {
             </div>
 
             <h3>{{ article.title }}</h3>
-            <p>{{ article.summary || '暂无摘要，点击进入阅读完整 Markdown 内容。' }}</p>
+            <p>{{ article.summary || '暂无摘要，点击查看提示词详情。' }}</p>
 
             <div class="chip-group">
               <span v-for="tag in article.tags" :key="tag.id">{{ tag.name }}</span>
@@ -191,7 +191,7 @@ onMounted(() => {
         </div>
 
         <div v-else class="empty-state article-stream__empty">
-          <p>{{ contentState.homeLoading ? '文章加载中...' : '当前没有文章。' }}</p>
+          <p>{{ contentState.homeLoading ? '加载中...' : '当前分类下暂无提示词，换个分类看看？' }}</p>
         </div>
       </section>
     </main>

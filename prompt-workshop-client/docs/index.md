@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: Prompt Workshop
-  text: 收集优秀 AI 提示词的清新文档站
-  tagline: 把项目构建、功能设计、页面实现与内容创作中的高质量提示词，整理成一个清晰、好查、好复用的知识空间。
+  text: 好用又有趣的 AI 提示词，都在这里
+  tagline: 一个开放的 AI 提示词收集站——汇集来自真实场景的优质提示词，让你用 AI 做事更高效、更有灵感。
   image:
     src: /logo.svg
     alt: Prompt Workshop Logo
@@ -17,56 +17,56 @@ hero:
       link: /guide/getting-started
 
 features:
-  - title: 按场景整理
-    details: 把项目搭建、页面开发、功能设计等不同主题的提示词分门别类地收录起来，后续查找更轻松。
-  - title: 开箱就能用
-    details: 站点本身基于 VitePress 构建，内容使用 Markdown 管理，写作、维护和部署都足够轻量。
-  - title: 持续沉淀
-    details: 适合把零散的提示词经验沉淀成长期资产，让优秀提示词可以重复使用和不断优化。
+  - title: 场景丰富
+    details: 涵盖编程开发、文案写作、图像生成、数据分析、学习辅导、趣味娱乐等多种场景，总有适合你的提示词。
+  - title: 拿来即用
+    details: 每条提示词都经过实际验证，附带使用说明和效果示例，复制粘贴就能直接用。
+  - title: 持续更新
+    details: 社区共建，不断收录新发现的好用提示词，也欢迎你来分享自己的得意之作。
 ---
 
 <div class="home-showcase">
   <div class="home-showcase__main">
-    <p class="home-kicker">简介</p>
-    <h2>把好用的提示词，整理成一眼就能找到的内容目录</h2>
+    <p class="home-kicker">为什么需要这个站</p>
+    <h2>好的提示词不该只用一次就丢掉</h2>
     <p class="home-lead">
-      这里适合沉淀那些真正能提升效率的 AI 提示词。
-      无论是项目初始化、页面开发、功能拆解，还是文案生成与内容创作，
-      都可以在这里形成清晰的分类、说明和使用入口。
+      我们都遇到过这种情况：偶然写出一条超好用的提示词，却找不到当时的聊天记录了。
+      Prompt Workshop 就是为此而生——把散落各处的好提示词集中起来，
+      分类整理、随时取用，让每一条好提示词都能被更多人发现和复用。
     </p>
 
     <div class="home-pills">
-      <span>项目构建</span>
-      <span>页面实现</span>
-      <span>功能设计</span>
-      <span>内容生成</span>
-      <span>提示词沉淀</span>
+      <span>编程开发</span>
+      <span>文案写作</span>
+      <span>图像生成</span>
+      <span>趣味玩法</span>
+      <span>效率工具</span>
     </div>
   </div>
 
   <div class="home-showcase__side">
     <div class="home-note">
-      <h3>适合放什么</h3>
-      <p>项目介绍、提示词模板、最佳实践、开发说明、持续更新的经验沉淀。</p>
+      <h3>收录什么</h3>
+      <p>经过验证的优质提示词、使用技巧、场景模板，以及各种有趣的 AI 玩法。</p>
     </div>
     <div class="home-note">
-      <h3>如何开始</h3>
-      <p>先从左侧分类或顶部导航进入，再按页面查阅对应的提示词与使用方式。</p>
+      <h3>如何参与</h3>
+      <p>浏览现有分类找到灵感，也欢迎提交你发现的好用提示词，一起丰富这个集合。</p>
     </div>
   </div>
 </div>
 
 <div class="home-grid">
   <div class="home-card">
-    <h3>清晰分类</h3>
-    <p>将优秀提示词按主题收纳，避免散落在聊天记录、临时文档和本地文件夹里。</p>
+    <h3>告别收藏夹吃灰</h3>
+    <p>不用再翻聊天记录、临时笔记或截图——好提示词统一收录，随时搜索取用。</p>
   </div>
   <div class="home-card">
-    <h3>轻量维护</h3>
-    <p>使用 Markdown 就能快速新增页面，团队成员也更容易一起协作补充内容。</p>
+    <h3>社区共建共享</h3>
+    <p>每个人都可以贡献自己发现的好提示词，集众人之力打造最实用的提示词库。</p>
   </div>
   <div class="home-card">
-    <h3>长期复用</h3>
-    <p>把一时有效的经验沉淀成长期资产，让提示词真正服务于后续项目与工作流。</p>
+    <h3>越用越好用</h3>
+    <p>提示词会随着使用反馈不断优化迭代，让 AI 真正成为你的高效助手。</p>
   </div>
 </div>
